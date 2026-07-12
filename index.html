@@ -98,9 +98,14 @@
 
     <section class="settings-group">
       <h3>Joystick keys</h3>
-      <p class="hint">Click a key, then press the key you want to use. <kbd>Esc</kbd> cancels.</p>
+      <p class="hint">Use <b>Configure all…</b> to set a joystick's five keys in sequence, or click a
+      single direction to rebind just that one. <kbd>Esc</kbd> cancels.</p>
       <div id="keyGrid" class="key-grid"></div>
-      <button id="keysReset" class="link-btn">Reset to defaults</button>
+      <div id="keyPrompt" class="key-prompt" aria-live="polite"></div>
+      <div class="key-actions">
+        <button id="flipJoy" class="link-btn">⇄ Flip joysticks</button>
+        <button id="keysReset" class="link-btn">Reset to defaults</button>
+      </div>
     </section>
 
     <section class="settings-group">

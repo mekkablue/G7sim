@@ -37,7 +37,9 @@
     volume: document.getElementById('volumeSlider'),
     volumeLabel: document.getElementById('volumeLabel'),
     keyGrid: document.getElementById('keyGrid'),
+    keyPrompt: document.getElementById('keyPrompt'),
     keysReset: document.getElementById('keysReset'),
+    flipJoy: document.getElementById('flipJoy'),
     screenFrame: document.querySelector('.screen-frame')
   };
 
@@ -227,7 +229,8 @@
   var settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   var codeToActions = {};   // code -> [[player, dir], ...]
   var captureCodes = {};    // codes we swallow (to stop page scroll) while running
-  var rebind = null;        // { player, dir } while awaiting a key press
+  var rebind = null;        // { player, dir } while awaiting a single key press
+  var rebindSeq = null;     // { player, index } while walking through all 5 keys
 
   function rebuildInputMaps() {
     codeToActions = {};
@@ -258,7 +261,18 @@
   }
 
   window.addEventListener('keydown', function (e) {
-    // key rebinding capture takes priority
+    // sequential "configure all keys" capture takes priority
+    if (rebindSeq) {
+      e.preventDefault();
+      if (e.code === 'Escape') { endSequence(); return; }
+      var dir = SEQ_ORDER[rebindSeq.index];
+      assignKey(rebindSeq.player, dir, e.code);
+      rebindSeq.index++;
+      if (rebindSeq.index >= SEQ_ORDER.length) endSequence();
+      else refreshSeqUI();
+      return;
+    }
+    // single-key rebinding capture
     if (rebind) {
       e.preventDefault();
       if (e.code !== 'Escape') assignKey(rebind.player, rebind.dir, e.code);
@@ -357,7 +371,9 @@
   });
   el.volume.addEventListener('change', saveSettings);
 
-  var KEY_LABELS = { up: '▲ Up', down: '▼ Down', left: '◀ Left', right: '▶ Right', fire: '● Fire' };
+  var SEQ_ORDER = ['up', 'down', 'left', 'right', 'fire'];
+  var DIR_GLYPH = { up: '↑', down: '↓', left: '←', right: '→', fire: '●' };
+  var DIR_NAME = { up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', fire: 'FIRE' };
   var ARROWS = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
   function prettyCode(code) {
     if (!code) return '—';
@@ -369,41 +385,87 @@
       .replace(/^ShiftLeft$/, 'L-Shift').replace(/^ShiftRight$/, 'R-Shift')
       .replace(/^ControlLeft$/, 'L-Ctrl').replace(/^ControlRight$/, 'R-Ctrl');
   }
+
+  // Build a geometric (D-pad shaped) key configurator per joystick.
   function buildKeyGrid() {
     el.keyGrid.innerHTML = '';
     [0, 1].forEach(function (player) {
-      var head = document.createElement('div');
-      head.className = 'key-head';
-      head.textContent = 'Joystick ' + (player + 1);
-      el.keyGrid.appendChild(head);
-      DIRS.forEach(function (dir) {
-        var row = document.createElement('div');
-        row.className = 'key-row';
-        var label = document.createElement('span');
-        label.textContent = KEY_LABELS[dir];
-        var btn = document.createElement('button');
-        btn.className = 'key-btn';
-        btn.dataset.player = player; btn.dataset.dir = dir;
-        btn.textContent = prettyCode(settings.joy[player][dir]);
-        btn.addEventListener('click', function () { startRebind(player, dir, btn); });
-        row.appendChild(label); row.appendChild(btn);
-        el.keyGrid.appendChild(row);
+      var block = document.createElement('div');
+      block.className = 'joy-config';
+
+      var title = document.createElement('div');
+      title.className = 'joy-title';
+      var name = document.createElement('span');
+      name.textContent = 'Joystick ' + (player + 1);
+      var cfg = document.createElement('button');
+      cfg.className = 'link-btn seq-btn';
+      cfg.textContent = 'Configure all…';
+      cfg.dataset.player = player;
+      cfg.addEventListener('click', function () { startSequence(player); });
+      title.appendChild(name); title.appendChild(cfg);
+      block.appendChild(title);
+
+      var pad = document.createElement('div');
+      pad.className = 'dpad-grid';
+      SEQ_ORDER.forEach(function (dir) {
+        var cell = document.createElement('button');
+        cell.className = 'dcell d-' + dir;
+        cell.dataset.player = player; cell.dataset.dir = dir;
+        cell.innerHTML = '<span class="dglyph">' + DIR_GLYPH[dir] + '</span>' +
+          '<span class="dkey">' + escapeHtml(prettyCode(settings.joy[player][dir])) + '</span>';
+        cell.addEventListener('click', function () { startRebind(player, dir, cell); });
+        pad.appendChild(cell);
       });
+      block.appendChild(pad);
+      el.keyGrid.appendChild(block);
     });
+    if (!rebindSeq && !rebind) setPrompt('');
   }
-  var rebindBtn = null;
-  function startRebind(player, dir, btn) {
-    if (rebindBtn) endRebind();
+
+  function escapeHtml(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+
+  function cellFor(player, dir) {
+    return el.keyGrid.querySelector('.dcell[data-player="' + player + '"][data-dir="' + dir + '"]');
+  }
+  function setPrompt(msg) { if (el.keyPrompt) el.keyPrompt.textContent = msg; }
+  function clearListening() {
+    Array.prototype.forEach.call(el.keyGrid.querySelectorAll('.dcell.listening'),
+      function (c) { c.classList.remove('listening'); });
+  }
+
+  // --- single key rebind ---
+  function startRebind(player, dir, cell) {
+    endSequence(true); endRebind(true);
     rebind = { player: player, dir: dir };
-    rebindBtn = btn;
-    btn.classList.add('listening');
-    btn.textContent = 'press a key… (Esc)';
+    clearListening();
+    if (cell) cell.classList.add('listening');
+    setPrompt('Press a key for Joystick ' + (player + 1) + ' ' + DIR_NAME[dir] + '  (Esc to cancel)');
   }
-  function endRebind() {
-    if (rebindBtn) { rebindBtn.classList.remove('listening'); }
-    rebind = null; rebindBtn = null;
-    buildKeyGrid();
+  function endRebind(silent) {
+    rebind = null;
+    if (!silent) { clearListening(); buildKeyGrid(); }
   }
+
+  // --- guided sequential rebind (all 5 keys in order) ---
+  function startSequence(player) {
+    endRebind(true);
+    rebindSeq = { player: player, index: 0 };
+    refreshSeqUI();
+  }
+  function refreshSeqUI() {
+    clearListening();
+    var dir = SEQ_ORDER[rebindSeq.index];
+    var cell = cellFor(rebindSeq.player, dir);
+    if (cell) cell.classList.add('listening');
+    setPrompt('Joystick ' + (rebindSeq.player + 1) + ' — press key for ' + DIR_NAME[dir] +
+      '  (' + (rebindSeq.index + 1) + '/' + SEQ_ORDER.length + ', Esc to stop)');
+  }
+  function endSequence(silent) {
+    rebindSeq = null;
+    clearListening();
+    if (!silent) { setPrompt('Done.'); buildKeyGrid(); }
+  }
+
   function assignKey(player, dir, code) {
     // remove this code from any other action so a key isn't double-bound
     settings.joy.forEach(function (map) {
@@ -412,10 +474,25 @@
     settings.joy[player][dir] = code;
     rebuildInputMaps();
     saveSettings();
+    // live-update the affected cell's label without losing capture highlight
+    var cell = cellFor(player, dir);
+    if (cell) { var k = cell.querySelector('.dkey'); if (k) k.textContent = prettyCode(code); }
   }
+
   el.keysReset.addEventListener('click', function () {
+    endSequence(true); endRebind(true);
     settings.joy = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.joy));
     rebuildInputMaps(); buildKeyGrid(); saveSettings();
+    setPrompt('Reset to defaults.');
+  });
+
+  el.flipJoy.addEventListener('click', function () {
+    endSequence(true); endRebind(true);
+    var tmp = settings.joy[0];
+    settings.joy[0] = settings.joy[1];
+    settings.joy[1] = tmp;
+    rebuildInputMaps(); buildKeyGrid(); saveSettings();
+    setPrompt('Swapped Joystick 1 ⇄ Joystick 2.');
   });
 
   function applyAllSettingsToUI() {
