@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>G7sim — Philips G7000 / Videopac / Odyssey² simulator</title>
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>G7<span>sim</span></h1>
+    <p class="tag">Philips G7000 · Magnavox Odyssey² · Videopac — in your browser</p>
+    <div id="biosState" class="bios-state">BIOS not loaded</div>
+  </header>
+
+  <main>
+    <section class="console">
+      <div class="screen-frame">
+        <canvas id="screen" width="320" height="240"></canvas>
+      </div>
+
+      <div class="toolbar">
+        <button id="pickBtn">📁 Load files…</button>
+        <button id="pauseBtn" disabled>Pause</button>
+        <button id="resetBtn" disabled>Reset</button>
+        <button id="muteBtn">🔈 Sound on</button>
+      </div>
+      <div id="status" class="status"></div>
+
+      <div class="pads">
+        <div class="dpad" aria-label="Player 1 joystick">
+          <button id="pad-up" class="pad u">▲</button>
+          <button id="pad-left" class="pad l">◀</button>
+          <button id="pad-fire" class="pad f">●</button>
+          <button id="pad-right" class="pad r">▶</button>
+          <button id="pad-down" class="pad d">▼</button>
+        </div>
+        <div id="keypad" class="keypad">
+          <button data-code="Digit1">1</button><button data-code="Digit2">2</button><button data-code="Digit3">3</button>
+          <button data-code="Digit4">4</button><button data-code="Digit5">5</button><button data-code="Digit6">6</button>
+          <button data-code="Digit7">7</button><button data-code="Digit8">8</button><button data-code="Digit9">9</button>
+          <button data-code="Space">SP</button><button data-code="Digit0">0</button><button data-code="Enter">⏎</button>
+        </div>
+      </div>
+    </section>
+
+    <aside id="libraryPane" class="library empty">
+      <h2>Game library <span id="gameTitle" class="now"></span></h2>
+      <ul id="gameList"></ul>
+      <div class="empty-note">
+        <p>No games yet.</p>
+        <p>Drop a <b>games .zip</b> (≈150 KB Videopac set) or a single cartridge dump here.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <details>
+      <summary>How to use &amp; controls</summary>
+      <div class="help">
+        <p><b>1.</b> Drag &amp; drop the <b>console BIOS</b> (the 1 KB <code>o2rom.bin</code> — cannot be
+        bundled for copyright reasons). <b>2.</b> Drag &amp; drop your <b>games .zip</b> (or a single
+        <code>.bin</code> cartridge). <b>3.</b> Click a game in the library. Everything is remembered for
+        next time and runs fully offline — no ROM ever leaves your machine.</p>
+        <table>
+          <tr><th>Joystick (P1)</th><td>Arrow keys · fire = <kbd>Space</kbd> or <kbd>Left&nbsp;Shift</kbd></td></tr>
+          <tr><th>Joystick (P2)</th><td>Numpad <kbd>8</kbd><kbd>4</kbd><kbd>6</kbd><kbd>2</kbd> · fire = Numpad <kbd>0</kbd></td></tr>
+          <tr><th>Keypad</th><td>Number/letter keys map to the Videopac membrane keyboard; <kbd>Enter</kbd>, <kbd>Backspace</kbd> (DEL)</td></tr>
+        </table>
+        <p class="fine">CPU: Intel 8048 · Video: Intel 8244/8245 VDC. Emulation core reimplemented in JavaScript
+        after the free O2EM project. Palette, character ROM and timing reproduce original hardware.</p>
+      </div>
+    </details>
+  </footer>
+</div>
+
+<div id="dropOverlay" class="drop-overlay">
+  <div class="drop-inner">
+    <div class="drop-icon">⬇</div>
+    <div>Drop BIOS / game / .zip to load</div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" multiple accept=".bin,.rom,.o2,.zip,.dat" hidden>
+
+<script src="src/storage.js"></script>
+<script src="src/zip.js"></script>
+<script src="src/g7000.js"></script>
+<script src="src/g7000-vdc.js"></script>
+<script src="src/g7000-cpu.js"></script>
+<script src="src/g7000-audio.js"></script>
+<script src="src/g7000-kluges.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
