@@ -31,8 +31,11 @@ The BIOS and the last dropped archive are remembered (IndexedDB), so you only dr
 
 On-screen D-pad, fire button and numeric keypad are provided for touch devices.
 
-Open **⚙ Settings** to turn sound on/off, adjust the volume, and rebind every
-joystick key for both players (click a key, then press the key you want). Toggle
+Open **⚙ Settings** to turn sound on/off and adjust the volume, and to configure the
+two joysticks. Each joystick is shown as a **D-pad-shaped diagram**; use **Configure
+all…** to set its five keys in sequence (it highlights UP, DOWN, LEFT, RIGHT, FIRE in
+turn and you just press the key for each), or click a single direction to rebind only
+that one. **⇄ Flip joysticks** swaps the two players' key assignments. Toggle
 **fullscreen** with the toolbar button or <kbd>Alt</kbd>+<kbd>0</kbd> (AltGr+0). All
 settings are remembered between sessions.
 
