@@ -52,12 +52,19 @@
   function G7000Audio() {
     this.ctx = null;
     this.nextTime = 0;
-    this.gain = 0.6;
-    this.dc = 0;      // DC-blocker state
+    this.volume = 60;       // 0..100
+    this.gain = 0.6;        // derived from volume
+    this.dc = 0;            // DC-blocker state
     this.prev = 0;
     this.muted = false;
     this.scratch = new Float32Array(4096);
   }
+
+  G7000Audio.prototype.setVolume = function (v) {
+    v = Math.max(0, Math.min(100, v | 0));
+    this.volume = v;
+    this.gain = v / 100;
+  };
 
   G7000Audio.prototype.ensure = function () {
     if (!this.ctx) {

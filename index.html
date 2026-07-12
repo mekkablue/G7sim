@@ -25,6 +25,8 @@
         <button id="pauseBtn" disabled>Pause</button>
         <button id="resetBtn" disabled>Reset</button>
         <button id="muteBtn">🔈 Sound on</button>
+        <button id="fullscreenBtn" title="Fullscreen (Alt+0)">⛶ Fullscreen</button>
+        <button id="settingsBtn">⚙ Settings</button>
       </div>
       <div id="status" class="status"></div>
 
@@ -73,6 +75,39 @@
       </div>
     </details>
   </footer>
+</div>
+
+<div id="settingsPanel" class="settings-overlay">
+  <div class="settings-box">
+    <div class="settings-head">
+      <h2>Settings</h2>
+      <button id="settingsClose" class="close-x" title="Close">✕</button>
+    </div>
+
+    <section class="settings-group">
+      <h3>Sound</h3>
+      <label class="row switch-row">
+        <input type="checkbox" id="soundToggle"> <span>Enable sound</span>
+      </label>
+      <label class="row">
+        <span>Volume</span>
+        <input type="range" id="volumeSlider" min="0" max="100" step="1" value="60">
+        <span id="volumeLabel" class="vol-label">60%</span>
+      </label>
+    </section>
+
+    <section class="settings-group">
+      <h3>Joystick keys</h3>
+      <p class="hint">Click a key, then press the key you want to use. <kbd>Esc</kbd> cancels.</p>
+      <div id="keyGrid" class="key-grid"></div>
+      <button id="keysReset" class="link-btn">Reset to defaults</button>
+    </section>
+
+    <section class="settings-group">
+      <h3>Display</h3>
+      <p class="hint">Toggle fullscreen with the toolbar button or <kbd>Alt</kbd>+<kbd>0</kbd> (AltGr+0).</p>
+    </section>
+  </div>
 </div>
 
 <div id="dropOverlay" class="drop-overlay">
