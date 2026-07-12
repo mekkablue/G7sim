@@ -21,6 +21,14 @@ runtime — everything stays on your machine and works fully offline.
 
 The BIOS and the last dropped archive are remembered (IndexedDB), so you only drop once.
 
+### Auto-loading defaults
+
+If you serve the page over http(s), G7sim automatically imports **`rom/rom.bin`**
+(BIOS) and **`rom/games.zip`** (game library) from next to `index.html` when present,
+so a deployment can ship with them preinstalled. Dragged-in files are saved and take
+precedence over these defaults. See [`rom/README.md`](rom/README.md). (Auto-load needs
+http(s); on `file://` use drag & drop.)
+
 ## Controls
 
 | Input | Mapping |
