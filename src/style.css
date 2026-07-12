@@ -148,6 +148,10 @@ footer summary { cursor: pointer; color: var(--accent2); }
 .dcell.listening { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 2px rgba(240,180,41,.25); }
 .dcell.listening .dglyph { color: var(--accent); }
 
+.shortcut-table { border-collapse: collapse; margin: 4px 0 8px; font-size: 13px; }
+.shortcut-table td { padding: 3px 16px 3px 0; color: var(--dim); }
+.shortcut-table td:first-child { white-space: nowrap; }
+
 .key-prompt { min-height: 18px; margin: 10px 0 2px; font-size: 12.5px; color: var(--accent); text-align: center; }
 .key-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 .link-btn { background: none; border: none; color: var(--accent2); padding: 6px 0 0; font-size: 13px; cursor: pointer; }

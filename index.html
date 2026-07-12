@@ -68,7 +68,8 @@
         <table>
           <tr><th>Joystick (P1)</th><td>Arrow keys · fire = <kbd>Space</kbd> or <kbd>Left&nbsp;Shift</kbd></td></tr>
           <tr><th>Joystick (P2)</th><td>Numpad <kbd>8</kbd><kbd>4</kbd><kbd>6</kbd><kbd>2</kbd> · fire = Numpad <kbd>0</kbd></td></tr>
-          <tr><th>Keypad</th><td>Number/letter keys map to the Videopac membrane keyboard; <kbd>Enter</kbd>, <kbd>Backspace</kbd> (DEL)</td></tr>
+          <tr><th>Keypad</th><td>Number/letter keys map to the Videopac membrane keyboard; <kbd>Enter</kbd>, <kbd>Backspace</kbd> (DEL). Hold <kbd>Shift</kbd> to type a letter even if it's a joystick key.</td></tr>
+          <tr><th>Shortcuts</th><td><kbd>Alt</kbd>+<kbd>P</kbd> pause · <kbd>Alt</kbd>+<kbd>S</kbd> sound · <kbd>Alt</kbd>+<kbd>0</kbd> fullscreen · <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> flip joysticks (Option / AltGr)</td></tr>
         </table>
         <p class="fine">CPU: Intel 8048 · Video: Intel 8244/8245 VDC. Emulation core reimplemented in JavaScript
         after the free O2EM project. Palette, character ROM and timing reproduce original hardware.</p>
@@ -109,8 +110,16 @@
     </section>
 
     <section class="settings-group">
-      <h3>Display</h3>
-      <p class="hint">Toggle fullscreen with the toolbar button or <kbd>Alt</kbd>+<kbd>0</kbd> (AltGr+0).</p>
+      <h3>Shortcuts</h3>
+      <p class="hint">Modifier is <kbd>Option</kbd> on macOS, <kbd>AltGr</kbd> on Windows.</p>
+      <table class="shortcut-table">
+        <tr><td><kbd>Alt</kbd>+<kbd>P</kbd></td><td>Pause / resume</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>Sound on / off</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>Fullscreen</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd></td><td>Flip joysticks</td></tr>
+      </table>
+      <p class="hint"><kbd>Shift</kbd>+letter always types on the Videopac keyboard (for hi-score
+      names), even when that letter is a joystick key.</p>
     </section>
   </div>
 </div>
