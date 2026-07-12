@@ -31,6 +31,11 @@ The BIOS and the last dropped archive are remembered (IndexedDB), so you only dr
 
 On-screen D-pad, fire button and numeric keypad are provided for touch devices.
 
+Open **⚙ Settings** to turn sound on/off, adjust the volume, and rebind every
+joystick key for both players (click a key, then press the key you want). Toggle
+**fullscreen** with the toolbar button or <kbd>Alt</kbd>+<kbd>0</kbd> (AltGr+0). All
+settings are remembered between sessions.
+
 ## What's emulated
 
 - **CPU** — full Intel 8048 (MCS-48) instruction set, timer/counter, external &

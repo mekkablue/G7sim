@@ -28,7 +28,17 @@
     title: document.getElementById('gameTitle'),
     mute: document.getElementById('muteBtn'),
     reset: document.getElementById('resetBtn'),
-    pause: document.getElementById('pauseBtn')
+    pause: document.getElementById('pauseBtn'),
+    fullscreen: document.getElementById('fullscreenBtn'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    settings: document.getElementById('settingsPanel'),
+    settingsClose: document.getElementById('settingsClose'),
+    soundToggle: document.getElementById('soundToggle'),
+    volume: document.getElementById('volumeSlider'),
+    volumeLabel: document.getElementById('volumeLabel'),
+    keyGrid: document.getElementById('keyGrid'),
+    keysReset: document.getElementById('keysReset'),
+    screenFrame: document.querySelector('.screen-frame')
   };
 
   // ---------- rendering ----------
@@ -204,32 +214,69 @@
     }).catch(function (err) { setStatus('Extract error: ' + err.message); });
   }
 
-  // ---------- input ----------
-  var JOY1 = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Space: 'fire', ShiftLeft: 'fire' };
-  var JOY2 = { Numpad8: 'up', Numpad2: 'down', Numpad4: 'left', Numpad6: 'right', Numpad0: 'fire', Numpad5: 'fire' };
-  var CAPTURE = { ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, Space: 1 };
+  // ---------- input & settings ----------
+  var DIRS = ['up', 'down', 'left', 'right', 'fire'];
+  var DEFAULT_SETTINGS = {
+    soundEnabled: true,
+    volume: 60,
+    joy: [
+      { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', fire: 'Space' },
+      { up: 'Numpad8', down: 'Numpad2', left: 'Numpad4', right: 'Numpad6', fire: 'Numpad0' }
+    ]
+  };
+  var settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  var codeToActions = {};   // code -> [[player, dir], ...]
+  var captureCodes = {};    // codes we swallow (to stop page scroll) while running
+  var rebind = null;        // { player, dir } while awaiting a key press
+
+  function rebuildInputMaps() {
+    codeToActions = {};
+    captureCodes = { ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, Space: 1 };
+    settings.joy.forEach(function (map, player) {
+      DIRS.forEach(function (dir) {
+        var code = map[dir];
+        if (!code) return;
+        (codeToActions[code] = codeToActions[code] || []).push([player, dir]);
+        captureCodes[code] = 1;
+      });
+    });
+  }
+
+  function applyAudioSettings() {
+    audio.setVolume(settings.volume);
+    audio.muted = !settings.soundEnabled;
+    audio.setMuted(audio.muted);
+    if (el.mute) el.mute.textContent = settings.soundEnabled ? '🔈 Sound on' : '🔇 Sound off';
+  }
+
+  function saveSettings() { window.G7Store.set('settings', settings); }
 
   function setKey(code, down) {
-    var handled = false;
-    if (JOY1[code] !== undefined) { emu.joy[0][JOY1[code]] = down ? 1 : 0; handled = true; }
-    if (JOY2[code] !== undefined) { emu.joy[1][JOY2[code]] = down ? 1 : 0; handled = true; }
-    // feed alphanumeric keyboard matrix as well
-    emu.keys[code] = down;
-    return handled;
+    var acts = codeToActions[code];
+    if (acts) for (var i = 0; i < acts.length; i++) emu.joy[acts[i][0]][acts[i][1]] = down ? 1 : 0;
+    emu.keys[code] = down; // also feed the alphanumeric membrane keyboard
   }
 
   window.addEventListener('keydown', function (e) {
-    if (e.repeat) { if (CAPTURE[e.code]) e.preventDefault(); return; }
+    // key rebinding capture takes priority
+    if (rebind) {
+      e.preventDefault();
+      if (e.code !== 'Escape') assignKey(rebind.player, rebind.dir, e.code);
+      endRebind();
+      return;
+    }
+    // Alt+0 / AltGr+0 -> toggle fullscreen
+    if (e.code === 'Digit0' && e.altKey) { e.preventDefault(); toggleFullscreen(); return; }
+    if (e.repeat) { if (captureCodes[e.code]) e.preventDefault(); return; }
     setKey(e.code, true);
-    if (CAPTURE[e.code] && running) e.preventDefault();
+    if (captureCodes[e.code] && running) e.preventDefault();
     if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
   });
   window.addEventListener('keyup', function (e) {
     setKey(e.code, false);
-    if (CAPTURE[e.code] && running) e.preventDefault();
+    if (captureCodes[e.code] && running) e.preventDefault();
   });
   window.addEventListener('blur', function () {
-    // release everything so keys don't stick when focus is lost
     emu.joy[0] = { up: 0, right: 0, down: 0, left: 0, fire: 0 };
     emu.joy[1] = { up: 0, right: 0, down: 0, left: 0, fire: 0 };
     emu.keys = {};
@@ -271,12 +318,113 @@
     if (running) audio.ensure();
   });
   el.mute.addEventListener('click', function () {
-    audio.muted = !audio.muted;
-    audio.setMuted(audio.muted);
-    el.mute.textContent = audio.muted ? '🔇 Sound off' : '🔈 Sound on';
+    settings.soundEnabled = !settings.soundEnabled;
+    applyAudioSettings();
+    if (el.soundToggle) el.soundToggle.checked = settings.soundEnabled;
+    saveSettings();
   });
   el.fileInput.addEventListener('change', function () { handleFiles(el.fileInput.files); el.fileInput.value = ''; });
   document.getElementById('pickBtn').addEventListener('click', function () { el.fileInput.click(); });
+
+  // ---------- fullscreen ----------
+  function toggleFullscreen() {
+    var doc = document;
+    var fsEl = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (fsEl) {
+      (doc.exitFullscreen || doc.webkitExitFullscreen || function () {}).call(doc);
+    } else {
+      var node = el.screenFrame;
+      (node.requestFullscreen || node.webkitRequestFullscreen || function () {}).call(node);
+    }
+  }
+  if (el.fullscreen) el.fullscreen.addEventListener('click', toggleFullscreen);
+
+  // ---------- settings panel ----------
+  function openSettings() { el.settings.classList.add('show'); }
+  function closeSettings() { el.settings.classList.remove('show'); }
+  if (el.settingsBtn) el.settingsBtn.addEventListener('click', openSettings);
+  if (el.settingsClose) el.settingsClose.addEventListener('click', closeSettings);
+  el.settings.addEventListener('click', function (e) { if (e.target === el.settings) closeSettings(); });
+
+  el.soundToggle.addEventListener('change', function () {
+    settings.soundEnabled = el.soundToggle.checked;
+    applyAudioSettings(); saveSettings();
+  });
+  el.volume.addEventListener('input', function () {
+    settings.volume = parseInt(el.volume.value, 10) || 0;
+    el.volumeLabel.textContent = settings.volume + '%';
+    audio.setVolume(settings.volume);
+  });
+  el.volume.addEventListener('change', saveSettings);
+
+  var KEY_LABELS = { up: '▲ Up', down: '▼ Down', left: '◀ Left', right: '▶ Right', fire: '● Fire' };
+  var ARROWS = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
+  function prettyCode(code) {
+    if (!code) return '—';
+    if (ARROWS[code]) return ARROWS[code];
+    return code
+      .replace(/^Key/, '')
+      .replace(/^Digit/, '')
+      .replace(/^Numpad/, 'Num ')
+      .replace(/^ShiftLeft$/, 'L-Shift').replace(/^ShiftRight$/, 'R-Shift')
+      .replace(/^ControlLeft$/, 'L-Ctrl').replace(/^ControlRight$/, 'R-Ctrl');
+  }
+  function buildKeyGrid() {
+    el.keyGrid.innerHTML = '';
+    [0, 1].forEach(function (player) {
+      var head = document.createElement('div');
+      head.className = 'key-head';
+      head.textContent = 'Joystick ' + (player + 1);
+      el.keyGrid.appendChild(head);
+      DIRS.forEach(function (dir) {
+        var row = document.createElement('div');
+        row.className = 'key-row';
+        var label = document.createElement('span');
+        label.textContent = KEY_LABELS[dir];
+        var btn = document.createElement('button');
+        btn.className = 'key-btn';
+        btn.dataset.player = player; btn.dataset.dir = dir;
+        btn.textContent = prettyCode(settings.joy[player][dir]);
+        btn.addEventListener('click', function () { startRebind(player, dir, btn); });
+        row.appendChild(label); row.appendChild(btn);
+        el.keyGrid.appendChild(row);
+      });
+    });
+  }
+  var rebindBtn = null;
+  function startRebind(player, dir, btn) {
+    if (rebindBtn) endRebind();
+    rebind = { player: player, dir: dir };
+    rebindBtn = btn;
+    btn.classList.add('listening');
+    btn.textContent = 'press a key… (Esc)';
+  }
+  function endRebind() {
+    if (rebindBtn) { rebindBtn.classList.remove('listening'); }
+    rebind = null; rebindBtn = null;
+    buildKeyGrid();
+  }
+  function assignKey(player, dir, code) {
+    // remove this code from any other action so a key isn't double-bound
+    settings.joy.forEach(function (map) {
+      DIRS.forEach(function (d) { if (map[d] === code) map[d] = null; });
+    });
+    settings.joy[player][dir] = code;
+    rebuildInputMaps();
+    saveSettings();
+  }
+  el.keysReset.addEventListener('click', function () {
+    settings.joy = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.joy));
+    rebuildInputMaps(); buildKeyGrid(); saveSettings();
+  });
+
+  function applyAllSettingsToUI() {
+    el.soundToggle.checked = settings.soundEnabled;
+    el.volume.value = settings.volume;
+    el.volumeLabel.textContent = settings.volume + '%';
+    buildKeyGrid();
+    applyAudioSettings();
+  }
 
   // ---------- drag & drop ----------
   var dragDepth = 0;
@@ -288,7 +436,23 @@
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
 
-  // ---------- restore persisted BIOS + library ----------
+  // ---------- restore persisted settings, BIOS + library ----------
+  rebuildInputMaps();
+  applyAllSettingsToUI();
+  window.G7Store.get('settings').then(function (s) {
+    if (s && typeof s === 'object') {
+      if (typeof s.soundEnabled === 'boolean') settings.soundEnabled = s.soundEnabled;
+      if (typeof s.volume === 'number') settings.volume = s.volume;
+      if (s.joy && s.joy[0] && s.joy[1]) {
+        [0, 1].forEach(function (p) {
+          DIRS.forEach(function (d) { if (typeof s.joy[p][d] === 'string' || s.joy[p][d] === null) settings.joy[p][d] = s.joy[p][d]; });
+        });
+      }
+      rebuildInputMaps();
+      applyAllSettingsToUI();
+    }
+  });
+
   window.G7Store.get('bios').then(function (buf) {
     if (buf) { try { loadBiosBytes(new Uint8Array(buf), false); } catch (e) {} }
   });
@@ -302,4 +466,7 @@
 
   updateReady();
   setStatus('Drop the console BIOS (1 KB) and a games .zip anywhere on this page to begin.');
+
+  // handle for debugging / automation
+  window.G7sim = { emu: emu, audio: audio, settings: settings };
 })();
