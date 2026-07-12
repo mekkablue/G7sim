@@ -27,24 +27,9 @@
         <button id="muteBtn">🔈 Sound on</button>
         <button id="fullscreenBtn" title="Fullscreen (Alt+0)">⛶ Fullscreen</button>
         <button id="settingsBtn">⚙ Settings</button>
+        <button id="helpBtn">❓ Help</button>
       </div>
       <div id="status" class="status"></div>
-
-      <div class="pads">
-        <div class="dpad" aria-label="Player 1 joystick">
-          <button id="pad-up" class="pad u">▲</button>
-          <button id="pad-left" class="pad l">◀</button>
-          <button id="pad-fire" class="pad f">●</button>
-          <button id="pad-right" class="pad r">▶</button>
-          <button id="pad-down" class="pad d">▼</button>
-        </div>
-        <div id="keypad" class="keypad">
-          <button data-code="Digit1">1</button><button data-code="Digit2">2</button><button data-code="Digit3">3</button>
-          <button data-code="Digit4">4</button><button data-code="Digit5">5</button><button data-code="Digit6">6</button>
-          <button data-code="Digit7">7</button><button data-code="Digit8">8</button><button data-code="Digit9">9</button>
-          <button data-code="Space">SP</button><button data-code="Digit0">0</button><button data-code="Enter">⏎</button>
-        </div>
-      </div>
     </section>
 
     <aside id="libraryPane" class="library empty">
@@ -58,24 +43,60 @@
   </main>
 
   <footer>
-    <details>
-      <summary>How to use &amp; controls</summary>
-      <div class="help">
-        <p><b>1.</b> Drag &amp; drop the <b>console BIOS</b> (the 1 KB <code>o2rom.bin</code> — cannot be
-        bundled for copyright reasons). <b>2.</b> Drag &amp; drop your <b>games .zip</b> (or a single
-        <code>.bin</code> cartridge). <b>3.</b> Click a game in the library. Everything is remembered for
-        next time and runs fully offline — no ROM ever leaves your machine.</p>
-        <table>
-          <tr><th>Joystick (P1)</th><td>Arrow keys · fire = <kbd>Space</kbd> or <kbd>Left&nbsp;Shift</kbd></td></tr>
-          <tr><th>Joystick (P2)</th><td>Numpad <kbd>8</kbd><kbd>4</kbd><kbd>6</kbd><kbd>2</kbd> · fire = Numpad <kbd>0</kbd></td></tr>
-          <tr><th>Keypad</th><td>Number/letter keys map to the Videopac membrane keyboard; <kbd>Enter</kbd>, <kbd>Backspace</kbd> (DEL). Hold <kbd>Shift</kbd> to type a letter even if it's a joystick key.</td></tr>
-          <tr><th>Shortcuts</th><td><kbd>Alt</kbd>+<kbd>P</kbd> pause · <kbd>Alt</kbd>+<kbd>S</kbd> sound · <kbd>Alt</kbd>+<kbd>0</kbd> fullscreen · <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> flip joysticks (Option / AltGr)</td></tr>
-        </table>
-        <p class="fine">CPU: Intel 8048 · Video: Intel 8244/8245 VDC. Emulation core reimplemented in JavaScript
-        after the free O2EM project. Palette, character ROM and timing reproduce original hardware.</p>
-      </div>
-    </details>
+    <button id="helpLink" class="footer-link">❓ How to use &amp; controls</button>
+    <span class="fine">Intel 8048 CPU · Intel 8244/8245 VDC · JavaScript core after the free O2EM project.</span>
   </footer>
+</div>
+
+<div id="helpPanel" class="settings-overlay">
+  <div class="settings-box">
+    <div class="settings-head">
+      <h2>Help</h2>
+      <button id="helpClose" class="close-x" title="Close">✕</button>
+    </div>
+
+    <section class="settings-group">
+      <h3>1 · Install the ROMs</h3>
+      <p class="hint">No BIOS or games are bundled (copyright), so you supply them once — everything
+      stays on your machine and runs offline.</p>
+      <ul class="help-list">
+        <li><b>Console BIOS</b> — drag &amp; drop the 1 KB <code>o2rom.bin</code> anywhere on the page
+        (G7400 / C52 / Jopac BIOSes are recognised too).</li>
+        <li><b>Games</b> — drop a <code>.zip</code> of cartridge dumps, or a single <code>.bin</code>/<code>.rom</code>.</li>
+        <li>Or use <b>📁 Load files…</b> instead of dragging.</li>
+        <li>When served over http(s), <code>rom/rom.bin</code> and <code>rom/games.zip</code> next to
+        <code>index.html</code> load automatically. Your dropped files are saved and take precedence.</li>
+      </ul>
+    </section>
+
+    <section class="settings-group">
+      <h3>2 · Open a game</h3>
+      <p class="hint">Pick a title from the <b>Game library</b> on the right. Use <b>Reset</b> to restart it
+      and <b>Pause</b> to halt/continue.</p>
+    </section>
+
+    <section class="settings-group">
+      <h3>Controls</h3>
+      <table class="help-table">
+        <tr><th>Joystick 1</th><td>Arrow keys · fire = <kbd>Space</kbd></td></tr>
+        <tr><th>Joystick 2</th><td>Numpad <kbd>8</kbd><kbd>4</kbd><kbd>6</kbd><kbd>2</kbd> · fire = Numpad <kbd>0</kbd></td></tr>
+        <tr><th>Keyboard</th><td>Letter &amp; number keys map to the Videopac membrane keyboard; <kbd>Enter</kbd>, <kbd>Backspace</kbd> = DEL.</td></tr>
+        <tr><th>Hi-scores</th><td>Hold <kbd>Shift</kbd> with a letter to type it even when that letter is a joystick key.</td></tr>
+      </table>
+      <p class="hint">All joystick keys are rebindable in <b>⚙ Settings</b>.</p>
+    </section>
+
+    <section class="settings-group">
+      <h3>Shortcuts</h3>
+      <p class="hint">Modifier is <kbd>Option</kbd> on macOS, <kbd>AltGr</kbd> on Windows.</p>
+      <table class="shortcut-table">
+        <tr><td><kbd>Alt</kbd>+<kbd>P</kbd></td><td>Pause / resume</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>Sound on / off</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>Fullscreen</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd></td><td>Flip joysticks</td></tr>
+      </table>
+    </section>
+  </div>
 </div>
 
 <div id="settingsPanel" class="settings-overlay">

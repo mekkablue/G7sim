@@ -55,20 +55,6 @@ button:disabled { opacity: .4; cursor: default; }
 
 .status { margin-top: 10px; min-height: 20px; color: var(--dim); font-size: 13px; }
 
-.pads { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
-.dpad { position: relative; width: 150px; height: 150px; flex: none; }
-.pad {
-  position: absolute; width: 48px; height: 48px; border-radius: 10px; font-size: 16px;
-  display: flex; align-items: center; justify-content: center; touch-action: none;
-}
-.pad.u { top: 0; left: 51px; } .pad.d { bottom: 0; left: 51px; }
-.pad.l { top: 51px; left: 0; } .pad.r { top: 51px; right: 0; }
-.pad.f { top: 51px; left: 51px; background: #7a1f2b; border-color: #b3364a; color: #ffd7dd; }
-.pad:active { border-color: var(--accent); }
-
-.keypad { display: grid; grid-template-columns: repeat(3, 46px); grid-auto-rows: 40px; gap: 6px; }
-.keypad button { padding: 0; font-size: 15px; touch-action: none; }
-
 .library { background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 14px; min-height: 200px; }
 .library h2 { margin: 0 0 10px; font-size: 15px; color: var(--dim); font-weight: 600; }
 .library h2 .now { color: var(--accent); display: block; font-size: 13px; margin-top: 2px; word-break: break-word; }
@@ -83,14 +69,20 @@ button:disabled { opacity: .4; cursor: default; }
 .empty-note p { margin: 6px 0; }
 .library:not(.empty) .empty-note { display: none; }
 
-footer { margin-top: 22px; color: var(--dim); font-size: 13px; }
-footer summary { cursor: pointer; color: var(--accent2); }
-.help { margin-top: 10px; background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 12px 14px; }
-.help table { border-collapse: collapse; margin: 8px 0; }
-.help th { text-align: left; padding: 4px 14px 4px 0; color: var(--text); font-weight: 600; vertical-align: top; white-space: nowrap; }
-.help td { padding: 4px 0; color: var(--dim); }
-.help code, .help kbd { background: var(--panel2); border: 1px solid var(--edge); border-radius: 4px; padding: 1px 5px; font-size: 12px; }
-.help .fine { font-size: 12px; opacity: .8; margin-top: 8px; }
+footer { margin-top: 22px; color: var(--dim); font-size: 13px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.footer-link { background: none; border: none; color: var(--accent2); padding: 0; font-size: 13px; cursor: pointer; }
+footer .fine { font-size: 12px; opacity: .75; }
+
+/* help / settings modal shared content styling */
+.settings-group code, .settings-group kbd, .help-table code, .help-table kbd {
+  background: var(--panel2); border: 1px solid var(--edge); border-radius: 4px; padding: 1px 5px; font-size: 12px;
+}
+.help-list { margin: 4px 0 6px; padding-left: 18px; }
+.help-list li { margin: 5px 0; font-size: 13.5px; color: var(--dim); }
+.help-list b { color: var(--text); }
+.help-table { border-collapse: collapse; margin: 2px 0 6px; }
+.help-table th { text-align: left; padding: 5px 14px 5px 0; color: var(--text); font-weight: 600; vertical-align: top; white-space: nowrap; font-size: 13px; }
+.help-table td { padding: 5px 0; color: var(--dim); font-size: 13px; }
 
 /* fullscreen */
 .screen-frame:fullscreen, .screen-frame:-webkit-full-screen {
