@@ -551,15 +551,39 @@
     }
   });
 
+  // Try to fetch a bundled default file placed next to index.html (rom/…).
+  // fetch() doesn't work from file:// origins, so only attempt over http(s).
+  function fetchDefault(path) {
+    if (location.protocol === 'file:') return Promise.resolve(null);
+    return fetch(path).then(function (r) {
+      if (!r || !r.ok) return null;
+      return r.arrayBuffer().then(function (ab) { return new Uint8Array(ab); });
+    }).catch(function () { return null; });
+  }
+
+  // BIOS: persisted copy wins; otherwise fall back to rom/rom.bin if present.
   window.G7Store.get('bios').then(function (buf) {
-    if (buf) { try { loadBiosBytes(new Uint8Array(buf), false); } catch (e) {} }
+    if (buf) { try { loadBiosBytes(new Uint8Array(buf), false); } catch (e) {} return; }
+    fetchDefault('rom/rom.bin').then(function (bytes) {
+      if (bytes && bytes.length === 1024) {
+        try { loadBiosBytes(bytes, false); } catch (e) {}
+      }
+    });
   });
+
+  // Library: persisted archive wins; otherwise fall back to rom/games.zip if present.
   window.G7Store.get('library').then(function (buf) {
     if (buf) {
       window.G7Store.get('libraryName').then(function (nm) {
         try { loadLibraryZip(nm || 'saved library', new Uint8Array(buf), false); } catch (e) {}
       });
+      return;
     }
+    fetchDefault('rom/games.zip').then(function (bytes) {
+      if (bytes && bytes.length) {
+        try { loadLibraryZip('games.zip', bytes, false); } catch (e) {}
+      }
+    });
   });
 
   updateReady();
