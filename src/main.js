@@ -254,9 +254,13 @@
 
   function saveSettings() { window.G7Store.set('settings', settings); }
 
-  function setKey(code, down) {
-    var acts = codeToActions[code];
-    if (acts) for (var i = 0; i < acts.length; i++) emu.joy[acts[i][0]][acts[i][1]] = down ? 1 : 0;
+  function isLetter(code) { return code.length === 4 && code.charCodeAt(0) === 75 /*K*/ && code.slice(0, 3) === 'Key'; }
+
+  function setKey(code, down, keyboardOnly) {
+    if (!keyboardOnly) {
+      var acts = codeToActions[code];
+      if (acts) for (var i = 0; i < acts.length; i++) emu.joy[acts[i][0]][acts[i][1]] = down ? 1 : 0;
+    }
     emu.keys[code] = down; // also feed the alphanumeric membrane keyboard
   }
 
@@ -279,14 +283,26 @@
       endRebind();
       return;
     }
-    // Alt+0 / AltGr+0 -> toggle fullscreen
-    if (e.code === 'Digit0' && e.altKey) { e.preventDefault(); toggleFullscreen(); return; }
+    // Keyboard shortcuts. The modifier is Option on macOS and AltGr on Windows;
+    // both set e.altKey (AltGr additionally sets ctrlKey), so e.altKey covers all.
+    if (e.altKey) {
+      switch (e.code) {
+        case 'Digit0': e.preventDefault(); toggleFullscreen(); return;
+        case 'KeyP': e.preventDefault(); togglePause(); return;
+        case 'KeyS': e.preventDefault(); toggleSound(); return;
+        case 'KeyJ': if (e.shiftKey) { e.preventDefault(); flipJoysticks(); return; } break;
+      }
+    }
     if (e.repeat) { if (captureCodes[e.code]) e.preventDefault(); return; }
-    setKey(e.code, true);
-    if (captureCodes[e.code] && running) e.preventDefault();
+    // Shift + a letter A-Z is always keyboard entry (e.g. typing hi-score names),
+    // never a joystick action, even if that key is bound to a joystick direction.
+    var keyboardOnly = e.shiftKey && isLetter(e.code);
+    setKey(e.code, true, keyboardOnly);
+    if (!keyboardOnly && captureCodes[e.code] && running) e.preventDefault();
     if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
   });
   window.addEventListener('keyup', function (e) {
+    // Always clear both joystick and keyboard state so nothing sticks.
     setKey(e.code, false);
     if (captureCodes[e.code] && running) e.preventDefault();
   });
@@ -325,18 +341,21 @@
     emu.reset(); running = true; el.pause.textContent = 'Pause';
     setStatus('Reset: ' + currentGame);
   });
-  el.pause.addEventListener('click', function () {
+  function togglePause() {
     if (!ready) return;
     running = !running;
     el.pause.textContent = running ? 'Pause' : 'Resume';
     if (running) audio.ensure();
-  });
-  el.mute.addEventListener('click', function () {
+    setStatus((running ? 'Resumed' : 'Paused') + (currentGame ? ': ' + currentGame : ''));
+  }
+  function toggleSound() {
     settings.soundEnabled = !settings.soundEnabled;
     applyAudioSettings();
     if (el.soundToggle) el.soundToggle.checked = settings.soundEnabled;
     saveSettings();
-  });
+  }
+  el.pause.addEventListener('click', togglePause);
+  el.mute.addEventListener('click', toggleSound);
   el.fileInput.addEventListener('change', function () { handleFiles(el.fileInput.files); el.fileInput.value = ''; });
   document.getElementById('pickBtn').addEventListener('click', function () { el.fileInput.click(); });
 
@@ -486,14 +505,16 @@
     setPrompt('Reset to defaults.');
   });
 
-  el.flipJoy.addEventListener('click', function () {
+  function flipJoysticks() {
     endSequence(true); endRebind(true);
     var tmp = settings.joy[0];
     settings.joy[0] = settings.joy[1];
     settings.joy[1] = tmp;
     rebuildInputMaps(); buildKeyGrid(); saveSettings();
     setPrompt('Swapped Joystick 1 ⇄ Joystick 2.');
-  });
+    setStatus('Flipped joysticks (Joystick 1 ⇄ 2).');
+  }
+  el.flipJoy.addEventListener('click', flipJoysticks);
 
   function applyAllSettingsToUI() {
     el.soundToggle.checked = settings.soundEnabled;

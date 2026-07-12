@@ -35,9 +35,23 @@ Open **⚙ Settings** to turn sound on/off and adjust the volume, and to configu
 two joysticks. Each joystick is shown as a **D-pad-shaped diagram**; use **Configure
 all…** to set its five keys in sequence (it highlights UP, DOWN, LEFT, RIGHT, FIRE in
 turn and you just press the key for each), or click a single direction to rebind only
-that one. **⇄ Flip joysticks** swaps the two players' key assignments. Toggle
-**fullscreen** with the toolbar button or <kbd>Alt</kbd>+<kbd>0</kbd> (AltGr+0). All
-settings are remembered between sessions.
+that one. **⇄ Flip joysticks** swaps the two players' key assignments. All settings are
+remembered between sessions.
+
+### Shortcuts
+
+The modifier is <kbd>Option</kbd> on macOS and <kbd>AltGr</kbd> on Windows:
+
+| Shortcut | Action |
+|----------|--------|
+| <kbd>Alt</kbd>+<kbd>P</kbd> | Pause / resume |
+| <kbd>Alt</kbd>+<kbd>S</kbd> | Sound on / off |
+| <kbd>Alt</kbd>+<kbd>0</kbd> | Fullscreen |
+| <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> | Flip joysticks (harder combo, to avoid accidents) |
+
+Holding <kbd>Shift</kbd> while pressing a letter A–Z always types on the Videopac
+keyboard (handy for entering hi-score names) — even if that letter is also assigned to
+a joystick direction.
 
 ## What's emulated
 
