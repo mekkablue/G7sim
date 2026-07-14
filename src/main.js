@@ -557,22 +557,59 @@
     });
   }
 
-  // BIOS: persisted copy wins; otherwise fall back to rom/rom.bin if present.
   // A console BIOS is 1 KB; accept a larger dump too (only the first 1 KB is used),
   // so a slightly padded file or a multi-region dump still works on any server.
+  function tryLoadBios(bytes) {
+    if (!bytes || bytes.length < 1024) return false;
+    try { loadBiosBytes(bytes, false); return true; }
+    catch (e) { console.warn('[G7sim] failed to load BIOS bytes: ' + e); return false; }
+  }
+
+  // Fallback: fetch rom/rom.zip, unzip in memory, and load a BIOS entry from it.
+  function loadBiosFromZip() {
+    return fetchDefault('rom/rom.zip').then(function (zbytes) {
+      if (!zbytes || !zbytes.length) return false;
+      var zip;
+      try { zip = window.G7Zip.parseZip(zbytes); }
+      catch (e) { console.warn('[G7sim] rom/rom.zip is not a valid ZIP: ' + e.message); return false; }
+      // pick the most BIOS-like entry: a named hint wins, then an exact 1 KB size,
+      // then the smallest file that is still at least 1 KB.
+      var cands = zip.entries.filter(function (en) { return en.size >= 1024; });
+      if (!cands.length) { console.warn('[G7sim] rom/rom.zip contains no file >= 1 KB.'); return false; }
+      cands.sort(function (a, b) {
+        var ah = /o2rom|bios|rom\.bin/i.test(a.name) ? 0 : 1;
+        var bh = /o2rom|bios|rom\.bin/i.test(b.name) ? 0 : 1;
+        if (ah !== bh) return ah - bh;
+        var a1 = a.size === 1024 ? 0 : 1, b1 = b.size === 1024 ? 0 : 1;
+        if (a1 !== b1) return a1 - b1;
+        return a.size - b.size;
+      });
+      var entry = cands[0];
+      return window.G7Zip.extractEntry(zip, entry).then(function (bytes) {
+        if (tryLoadBios(bytes)) {
+          console.info('[G7sim] BIOS loaded from rom/rom.zip (' + entry.name + ').');
+          return true;
+        }
+        console.warn('[G7sim] rom/rom.zip entry "' + entry.name + '" is not a usable BIOS.');
+        return false;
+      }).catch(function (e) { console.warn('[G7sim] could not extract BIOS from rom/rom.zip: ' + e.message); return false; });
+    });
+  }
+
+  // BIOS: persisted copy wins; otherwise try rom/rom.bin, then fall back to rom/rom.zip.
   window.G7Store.get('bios').then(function (buf) {
     if (buf) { try { loadBiosBytes(new Uint8Array(buf), false); } catch (e) {} return; }
     fetchDefault('rom/rom.bin').then(function (bytes) {
-      if (!bytes) return;
-      if (bytes.length < 1024) {
-        console.warn('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; a console BIOS must be at least 1 KB — ignoring.');
-        setStatus('Found rom/rom.bin, but it is only ' + bytes.length + ' bytes (a BIOS must be 1 KB). Check the file.');
+      if (bytes && bytes.length >= 1024) {
+        if (bytes.length !== 1024) console.info('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; using the first 1 KB as the BIOS.');
+        tryLoadBios(bytes);
         return;
       }
-      if (bytes.length !== 1024) {
-        console.info('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; using the first 1 KB as the BIOS.');
+      if (bytes && bytes.length < 1024) {
+        console.warn('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes (too small for a BIOS); trying rom/rom.zip.');
       }
-      try { loadBiosBytes(bytes, false); } catch (e) { console.warn('[G7sim] failed to load rom/rom.bin: ' + e); }
+      // rom.bin missing or unusable -> try the zipped BIOS
+      loadBiosFromZip();
     });
   });
 
