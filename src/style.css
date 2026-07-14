@@ -34,6 +34,7 @@ main { display: grid; grid-template-columns: minmax(0,1fr) 260px; gap: 18px; ali
 
 .console { background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 16px; }
 .screen-frame {
+  position: relative;
   background: #000; border-radius: 10px; padding: 12px;
   box-shadow: inset 0 0 0 2px #0a0a0a, inset 0 0 60px rgba(0,0,0,.6);
 }
@@ -84,14 +85,69 @@ footer .fine { font-size: 12px; opacity: .75; }
 .help-table th { text-align: left; padding: 5px 14px 5px 0; color: var(--text); font-weight: 600; vertical-align: top; white-space: nowrap; font-size: 13px; }
 .help-table td { padding: 5px 0; color: var(--dim); font-size: 13px; }
 
-/* fullscreen */
-.screen-frame:fullscreen, .screen-frame:-webkit-full-screen {
+/* fullscreen (real, and .fs-sim pseudo-fullscreen for iOS Safari which has
+   no Fullscreen API on plain elements) */
+.screen-frame:fullscreen, .screen-frame:-webkit-full-screen, .screen-frame.fs-sim {
   display: flex; align-items: center; justify-content: center;
   width: 100vw; height: 100vh; padding: 0; border-radius: 0; background: #000;
 }
-.screen-frame:fullscreen #screen, .screen-frame:-webkit-full-screen #screen {
+.screen-frame.fs-sim { position: fixed; inset: 0; z-index: 40; }
+.screen-frame:fullscreen #screen, .screen-frame:-webkit-full-screen #screen, .screen-frame.fs-sim #screen {
   width: auto; height: 100vh; max-width: 100vw; aspect-ratio: 4 / 3; border-radius: 0;
 }
+
+/* ---- mobile portrait touch mode (fullscreen + coarse pointer + portrait) ---- */
+#touchUI, .touch-numpad { display: none; }
+
+.screen-frame.touch-mode {
+  flex-direction: column; align-items: stretch; justify-content: flex-start;
+}
+.screen-frame.touch-mode #screen {
+  width: 100vw; height: auto; max-height: 75vh; margin: 0; touch-action: none;
+}
+.screen-frame.touch-mode #touchUI {
+  display: block; position: relative; flex: 1; min-height: 190px;
+  touch-action: none; -webkit-user-select: none; user-select: none;
+}
+
+/* draggable 8-way joystick, bottom right (right thumb) */
+#touchStick {
+  position: absolute; right: 18px; bottom: 64px; width: 150px; height: 150px;
+  border-radius: 50%; background: rgba(255,255,255,.06);
+  border: 2px solid var(--edge); touch-action: none;
+}
+#touchKnob {
+  position: absolute; left: 50%; top: 50%; width: 62px; height: 62px;
+  margin: -31px 0 0 -31px; border-radius: 50%;
+  background: var(--panel2); border: 2px solid var(--accent);
+  box-shadow: 0 3px 10px rgba(0,0,0,.5); pointer-events: none;
+}
+
+/* fire button on the left, top-aligned with the joystick (left thumb) */
+#touchFire {
+  position: absolute; left: 22px; bottom: 124px; width: 90px; height: 90px;
+  border-radius: 50%; background: #7a1f2b; border: 2px solid #b3364a;
+  color: #ffd7dd; font-size: 15px; font-weight: 700; letter-spacing: 1px;
+  touch-action: none;
+}
+#touchFire:active { background: #a02a3a; }
+
+/* swap button, bottom-left corner */
+#touchSwap {
+  position: absolute; left: 16px; bottom: 14px; padding: 8px 14px;
+  border-radius: 20px; font-size: 13px; touch-action: none;
+}
+
+/* long-press number pad overlay */
+.touch-numpad.show { display: grid; }
+.touch-numpad {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  grid-template-columns: repeat(3, 64px); grid-auto-rows: 56px; gap: 8px;
+  background: rgba(20,23,32,.94); border: 1px solid var(--edge);
+  border-radius: 14px; padding: 14px; z-index: 5; touch-action: none;
+}
+.touch-numpad button { font-size: 20px; padding: 0; touch-action: none; }
+.touch-numpad .np-close { color: var(--accent); }
 
 /* settings panel */
 .settings-overlay {

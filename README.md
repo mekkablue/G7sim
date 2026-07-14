@@ -40,6 +40,17 @@ http(s); on `file://` use drag & drop.)
 Click **❓ Help** at any time for a quick reference on installing ROMs, opening games,
 the controls, and the shortcuts.
 
+### Playing on a phone
+
+Enter **fullscreen** on a touch device in portrait orientation and touch controls
+appear: the screen is pinned to the top, a draggable **8-way joystick** sits under the
+right thumb, a **FIRE** button under the left thumb (top-aligned with the stick), and a
+**⇄ P1/P2** button in the bottom-left corner switches which console joystick you
+control. **Press and hold the screen** to bring up a temporary number pad — e.g. for
+the BIOS "SELECT GAME" prompt. On iPhone (where the browser lacks a fullscreen API for
+page elements) a built-in fullscreen fallback is used automatically, so single-player
+games are playable on iOS Safari.
+
 Open **⚙ Settings** to turn sound on/off and adjust the volume, and to configure the
 two joysticks. Each joystick is shown as a **D-pad-shaped diagram**; use **Configure
 all…** to set its five keys in sequence (it highlights UP, DOWN, LEFT, RIGHT, FIRE in

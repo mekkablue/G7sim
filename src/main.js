@@ -347,17 +347,182 @@
   document.getElementById('pickBtn').addEventListener('click', function () { el.fileInput.click(); });
 
   // ---------- fullscreen ----------
+  // iOS Safari has no Fullscreen API for plain elements, so fall back to a
+  // fixed-position "simulated" fullscreen there (class fs-sim on the frame).
+  function fsActive() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement) ||
+      el.screenFrame.classList.contains('fs-sim');
+  }
   function toggleFullscreen() {
-    var doc = document;
-    var fsEl = doc.fullscreenElement || doc.webkitFullscreenElement;
-    if (fsEl) {
+    var doc = document, node = el.screenFrame;
+    if (doc.fullscreenElement || doc.webkitFullscreenElement) {
       (doc.exitFullscreen || doc.webkitExitFullscreen || function () {}).call(doc);
+    } else if (node.classList.contains('fs-sim')) {
+      node.classList.remove('fs-sim');
+    } else if (node.requestFullscreen) {
+      node.requestFullscreen().catch(function () { node.classList.add('fs-sim'); });
+    } else if (node.webkitRequestFullscreen) {
+      node.webkitRequestFullscreen();
     } else {
-      var node = el.screenFrame;
-      (node.requestFullscreen || node.webkitRequestFullscreen || function () {}).call(node);
+      node.classList.add('fs-sim');
     }
+    setTimeout(updateTouchMode, 50);
   }
   if (el.fullscreen) el.fullscreen.addEventListener('click', toggleFullscreen);
+
+  // ---------- mobile portrait touch controls ----------
+  // Shown in fullscreen on a touch device in portrait: screen pinned to the
+  // top, a draggable 8-way joystick under the right thumb, a fire button for
+  // the left thumb (top-aligned with the stick), and a swap button in the
+  // bottom-left corner that toggles which console joystick the touch controls
+  // drive. Long-pressing the screen shows a temporary number pad (for the
+  // BIOS "select game" prompt).
+  var touch = { player: 0, forced: null };
+  var touchStick = document.getElementById('touchStick');
+  var touchKnob = document.getElementById('touchKnob');
+  var touchFire = document.getElementById('touchFire');
+  var touchSwap = document.getElementById('touchSwap');
+  var touchPlayerNo = document.getElementById('touchPlayerNo');
+  var touchNumpad = document.getElementById('touchNumpad');
+
+  function isTouchPortrait() {
+    if (touch.forced !== null) return touch.forced;
+    var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    var portrait = window.innerHeight >= window.innerWidth;
+    return coarse && portrait;
+  }
+  function updateTouchMode() {
+    var on = fsActive() && isTouchPortrait();
+    el.screenFrame.classList.toggle('touch-mode', on);
+    if (!on) {
+      hideNumpad();
+      releaseStick();
+      emu.joy[touch.player].fire = 0;
+    }
+  }
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+    document.addEventListener(ev, updateTouchMode);
+  });
+  window.addEventListener('resize', updateTouchMode);
+  window.addEventListener('orientationchange', updateTouchMode);
+
+  // --- 8-way draggable joystick ---
+  var stickPointer = null;
+  function releaseStick() {
+    stickPointer = null;
+    touchKnob.style.transform = '';
+    var j = emu.joy[touch.player];
+    j.up = j.down = j.left = j.right = 0;
+  }
+  function applyStick(dx, dy) {
+    var j = emu.joy[touch.player];
+    j.up = j.down = j.left = j.right = 0;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var r = touchStick.clientWidth / 2;
+    var dead = Math.max(12, r * 0.25);
+    // clamp knob to the base circle
+    var k = dist > r * 0.7 ? (r * 0.7) / dist : 1;
+    touchKnob.style.transform = 'translate(' + (dx * k) + 'px,' + (dy * k) + 'px)';
+    if (dist < dead) return;
+    // 8 sectors of 45°, diagonals set two directions
+    var a = Math.atan2(dy, dx) * 180 / Math.PI; // -180..180, 0 = right
+    if (a > -112.5 && a < -67.5) { j.up = 1; }
+    else if (a >= -67.5 && a <= -22.5) { j.up = 1; j.right = 1; }
+    else if (a > -22.5 && a < 22.5) { j.right = 1; }
+    else if (a >= 22.5 && a <= 67.5) { j.down = 1; j.right = 1; }
+    else if (a > 67.5 && a < 112.5) { j.down = 1; }
+    else if (a >= 112.5 && a <= 157.5) { j.down = 1; j.left = 1; }
+    else if (a > 157.5 || a < -157.5) { j.left = 1; }
+    else { j.up = 1; j.left = 1; }
+  }
+  touchStick.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    stickPointer = e.pointerId;
+    try { touchStick.setPointerCapture(e.pointerId); } catch (err) {}
+    var rc = touchStick.getBoundingClientRect();
+    applyStick(e.clientX - (rc.left + rc.width / 2), e.clientY - (rc.top + rc.height / 2));
+    if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+  });
+  touchStick.addEventListener('pointermove', function (e) {
+    if (e.pointerId !== stickPointer) return;
+    e.preventDefault();
+    var rc = touchStick.getBoundingClientRect();
+    applyStick(e.clientX - (rc.left + rc.width / 2), e.clientY - (rc.top + rc.height / 2));
+  });
+  ['pointerup', 'pointercancel'].forEach(function (ev) {
+    touchStick.addEventListener(ev, function (e) {
+      if (e.pointerId !== stickPointer) return;
+      e.preventDefault();
+      releaseStick();
+    });
+  });
+
+  // --- fire button ---
+  touchFire.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    emu.joy[touch.player].fire = 1;
+    if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+    touchFire.addEventListener(ev, function (e) { e.preventDefault(); emu.joy[touch.player].fire = 0; });
+  });
+
+  // --- swap button: drive the other console joystick ---
+  function setTouchPlayer(p) {
+    var j = emu.joy[touch.player];
+    j.up = j.down = j.left = j.right = j.fire = 0;
+    touch.player = p;
+    touchPlayerNo.textContent = String(p + 1);
+  }
+  touchSwap.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    setTouchPlayer(touch.player === 0 ? 1 : 0);
+  });
+
+  // --- long-press on the screen: temporary number pad ---
+  var pressTimer = null, pressStart = null, numpadIdle = null;
+  function showNumpad() {
+    touchNumpad.classList.add('show');
+    armNumpadIdle();
+  }
+  function hideNumpad() {
+    touchNumpad.classList.remove('show');
+    if (numpadIdle) { clearTimeout(numpadIdle); numpadIdle = null; }
+  }
+  function armNumpadIdle() {
+    if (numpadIdle) clearTimeout(numpadIdle);
+    numpadIdle = setTimeout(hideNumpad, 5000);
+  }
+  canvas.addEventListener('pointerdown', function (e) {
+    if (!el.screenFrame.classList.contains('touch-mode')) return;
+    pressStart = { x: e.clientX, y: e.clientY };
+    pressTimer = setTimeout(function () { pressTimer = null; showNumpad(); }, 450);
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    if (!pressTimer || !pressStart) return;
+    if (Math.abs(e.clientX - pressStart.x) + Math.abs(e.clientY - pressStart.y) > 14) {
+      clearTimeout(pressTimer); pressTimer = null;
+    }
+  });
+  ['pointerup', 'pointercancel'].forEach(function (ev) {
+    canvas.addEventListener(ev, function () {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+  });
+  touchNumpad.querySelectorAll('button').forEach(function (btn) {
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      if (btn.dataset.close) { hideNumpad(); return; }
+      emu.keys[btn.dataset.code] = true;
+      armNumpadIdle();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+      btn.addEventListener(ev, function (e) {
+        e.preventDefault();
+        if (btn.dataset.code) emu.keys[btn.dataset.code] = false;
+      });
+    });
+  });
 
   // ---------- settings panel ----------
   function openSettings() { el.settings.classList.add('show'); }
@@ -557,22 +722,59 @@
     });
   }
 
-  // BIOS: persisted copy wins; otherwise fall back to rom/rom.bin if present.
   // A console BIOS is 1 KB; accept a larger dump too (only the first 1 KB is used),
   // so a slightly padded file or a multi-region dump still works on any server.
+  function tryLoadBios(bytes) {
+    if (!bytes || bytes.length < 1024) return false;
+    try { loadBiosBytes(bytes, false); return true; }
+    catch (e) { console.warn('[G7sim] failed to load BIOS bytes: ' + e); return false; }
+  }
+
+  // Fallback: fetch rom/rom.zip, unzip in memory, and load a BIOS entry from it.
+  function loadBiosFromZip() {
+    return fetchDefault('rom/rom.zip').then(function (zbytes) {
+      if (!zbytes || !zbytes.length) return false;
+      var zip;
+      try { zip = window.G7Zip.parseZip(zbytes); }
+      catch (e) { console.warn('[G7sim] rom/rom.zip is not a valid ZIP: ' + e.message); return false; }
+      // pick the most BIOS-like entry: a named hint wins, then an exact 1 KB size,
+      // then the smallest file that is still at least 1 KB.
+      var cands = zip.entries.filter(function (en) { return en.size >= 1024; });
+      if (!cands.length) { console.warn('[G7sim] rom/rom.zip contains no file >= 1 KB.'); return false; }
+      cands.sort(function (a, b) {
+        var ah = /o2rom|bios|rom\.bin/i.test(a.name) ? 0 : 1;
+        var bh = /o2rom|bios|rom\.bin/i.test(b.name) ? 0 : 1;
+        if (ah !== bh) return ah - bh;
+        var a1 = a.size === 1024 ? 0 : 1, b1 = b.size === 1024 ? 0 : 1;
+        if (a1 !== b1) return a1 - b1;
+        return a.size - b.size;
+      });
+      var entry = cands[0];
+      return window.G7Zip.extractEntry(zip, entry).then(function (bytes) {
+        if (tryLoadBios(bytes)) {
+          console.info('[G7sim] BIOS loaded from rom/rom.zip (' + entry.name + ').');
+          return true;
+        }
+        console.warn('[G7sim] rom/rom.zip entry "' + entry.name + '" is not a usable BIOS.');
+        return false;
+      }).catch(function (e) { console.warn('[G7sim] could not extract BIOS from rom/rom.zip: ' + e.message); return false; });
+    });
+  }
+
+  // BIOS: persisted copy wins; otherwise try rom/rom.bin, then fall back to rom/rom.zip.
   window.G7Store.get('bios').then(function (buf) {
     if (buf) { try { loadBiosBytes(new Uint8Array(buf), false); } catch (e) {} return; }
     fetchDefault('rom/rom.bin').then(function (bytes) {
-      if (!bytes) return;
-      if (bytes.length < 1024) {
-        console.warn('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; a console BIOS must be at least 1 KB — ignoring.');
-        setStatus('Found rom/rom.bin, but it is only ' + bytes.length + ' bytes (a BIOS must be 1 KB). Check the file.');
+      if (bytes && bytes.length >= 1024) {
+        if (bytes.length !== 1024) console.info('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; using the first 1 KB as the BIOS.');
+        tryLoadBios(bytes);
         return;
       }
-      if (bytes.length !== 1024) {
-        console.info('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; using the first 1 KB as the BIOS.');
+      if (bytes && bytes.length < 1024) {
+        console.warn('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes (too small for a BIOS); trying rom/rom.zip.');
       }
-      try { loadBiosBytes(bytes, false); } catch (e) { console.warn('[G7sim] failed to load rom/rom.bin: ' + e); }
+      // rom.bin missing or unusable -> try the zipped BIOS
+      loadBiosFromZip();
     });
   });
 
@@ -595,5 +797,5 @@
   setStatus('Drop the console BIOS (1 KB) and a games .zip anywhere on this page to begin.');
 
   // handle for debugging / automation
-  window.G7sim = { emu: emu, audio: audio, settings: settings };
+  window.G7sim = { emu: emu, audio: audio, settings: settings, touch: touch, updateTouchMode: updateTouchMode };
 })();
