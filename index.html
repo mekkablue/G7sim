@@ -24,6 +24,9 @@
             <div id="touchKnob"></div>
           </div>
           <button id="touchSwap" aria-label="Swap joysticks">⇄ P<span id="touchPlayerNo">1</span></button>
+          <div id="touchExitPrompt" class="touch-exit-prompt">
+            <button id="touchExitBtn">⤢ Exit Fullscreen</button>
+          </div>
         </div>
         <div id="touchNumpad" class="touch-numpad">
           <button data-code="Digit1">1</button><button data-code="Digit2">2</button><button data-code="Digit3">3</button>
@@ -113,10 +116,13 @@
     <section class="settings-group">
       <h3>Playing on a phone</h3>
       <p class="hint">In fullscreen on a touch device in portrait, the screen moves to the top and touch
-      controls appear: a draggable 8-way <b>joystick</b> for the right thumb, a <b>FIRE</b> button for
-      the left thumb, and a <b>⇄ P1/P2</b> button (bottom-left) that switches which console joystick
-      you control. <b>Press and hold the screen</b> for a temporary number pad (e.g. to pick a game at
-      the SELECT GAME prompt).</p>
+      controls appear: a draggable 8-way <b>joystick</b> for the right thumb (it snaps between 8
+      directions, like the real digital stick), a <b>FIRE</b> button for the left thumb, and a
+      <b>⇄ P1/P2</b> button (bottom-left) that switches which console joystick you control.
+      <b>Press and hold the screen</b> for a temporary number pad (e.g. to pick a game at the SELECT
+      GAME prompt) — it closes as soon as you pick a digit. <b>Press and hold ⇄</b> to exit fullscreen
+      instead of swapping. On devices that support it, the joystick and fire button give a light
+      tactile tap.</p>
     </section>
   </div>
 </div>

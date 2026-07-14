@@ -96,6 +96,15 @@ footer .fine { font-size: 12px; opacity: .75; }
   width: auto; height: 100vh; max-width: 100vw; aspect-ratio: 4 / 3; border-radius: 0;
 }
 
+/* While (pseudo-)fullscreen is active, lock out pinch/double-tap zoom and
+   rubber-band scrolling for the whole page - on iOS the fs-sim overlay is
+   position:fixed, so a zoom triggered outside it can't be scrolled/panned
+   away afterwards. touch-action:none is the load-bearing rule; manipulation
+   alone is not consistently honored by Safari for double-tap. */
+html.g7-lock-zoom, html.g7-lock-zoom body {
+  touch-action: none; overscroll-behavior: none;
+}
+
 /* ---- mobile portrait touch mode (fullscreen + coarse pointer + portrait) ---- */
 #touchUI, .touch-numpad { display: none; }
 
@@ -121,6 +130,10 @@ footer .fine { font-size: 12px; opacity: .75; }
   margin: -31px 0 0 -31px; border-radius: 50%;
   background: var(--panel2); border: 2px solid var(--accent);
   box-shadow: 0 3px 10px rgba(0,0,0,.5); pointer-events: none;
+  /* the knob snaps between 9 discrete positions (8 directions + centre) to
+     read as a digital d-pad rather than an analog stick; this transition
+     is purely cosmetic - the emulated input updates instantly in JS */
+  transition: transform 70ms ease-out;
 }
 
 /* fire button on the left, top-aligned with the joystick (left thumb) */
@@ -136,6 +149,19 @@ footer .fine { font-size: 12px; opacity: .75; }
 #touchSwap {
   position: absolute; left: 16px; bottom: 14px; padding: 8px 14px;
   border-radius: 20px; font-size: 13px; touch-action: none;
+}
+
+/* holding the swap button pops this up instead of swapping */
+.touch-exit-prompt { display: none; }
+.touch-exit-prompt.show { display: block; }
+.touch-exit-prompt {
+  position: absolute; left: 16px; bottom: 54px; z-index: 6;
+}
+.touch-exit-prompt button {
+  padding: 10px 16px; border-radius: 10px; font-size: 13px;
+  background: var(--panel2); border: 1px solid var(--accent); color: var(--accent);
+  touch-action: none; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,.5);
 }
 
 /* long-press number pad overlay */
