@@ -8,3 +8,4 @@ rom/*.rom
 rom/*.o2
 rom/*.zip
 rom/*.dat
+.DS_Store
