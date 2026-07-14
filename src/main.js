@@ -353,6 +353,12 @@
     return !!(document.fullscreenElement || document.webkitFullscreenElement) ||
       el.screenFrame.classList.contains('fs-sim');
   }
+  // While (pseudo-)fullscreen is active, disable page-level pinch/double-tap
+  // zoom: on iOS the fs-sim overlay is position:fixed, so a zoom triggered
+  // outside the touch controls can't be panned/scrolled back out afterwards.
+  function setZoomLock(on) {
+    document.documentElement.classList.toggle('g7-lock-zoom', on);
+  }
   function toggleFullscreen() {
     var doc = document, node = el.screenFrame;
     if (doc.fullscreenElement || doc.webkitFullscreenElement) {
@@ -370,13 +376,33 @@
   }
   if (el.fullscreen) el.fullscreen.addEventListener('click', toggleFullscreen);
 
+  // Extra safety net: some iOS Safari versions still fire double-tap-zoom on
+  // a fixed-position overlay despite touch-action:none. Suppress any second
+  // touchend that lands within the standard double-tap window.
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    if (!fsActive()) return;
+    var now = Date.now();
+    if (now - lastTouchEnd < 350) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  // Best-effort haptic feedback. iOS Safari has never implemented the
+  // Vibration API (Apple's choice, not a bug), so this is a silent no-op
+  // there; it works today on Android Chrome and will pick up any future
+  // WebKit support automatically since it's feature-detected.
+  function hapticTap(ms) {
+    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+  }
+
   // ---------- mobile portrait touch controls ----------
   // Shown in fullscreen on a touch device in portrait: screen pinned to the
   // top, a draggable 8-way joystick under the right thumb, a fire button for
   // the left thumb (top-aligned with the stick), and a swap button in the
   // bottom-left corner that toggles which console joystick the touch controls
   // drive. Long-pressing the screen shows a temporary number pad (for the
-  // BIOS "select game" prompt).
+  // BIOS "select game" prompt); long-pressing the swap button offers to exit
+  // fullscreen instead of swapping.
   var touch = { player: 0, forced: null };
   var touchStick = document.getElementById('touchStick');
   var touchKnob = document.getElementById('touchKnob');
@@ -384,6 +410,8 @@
   var touchSwap = document.getElementById('touchSwap');
   var touchPlayerNo = document.getElementById('touchPlayerNo');
   var touchNumpad = document.getElementById('touchNumpad');
+  var touchExitPrompt = document.getElementById('touchExitPrompt');
+  var touchExitBtn = document.getElementById('touchExitBtn');
 
   function isTouchPortrait() {
     if (touch.forced !== null) return touch.forced;
@@ -392,10 +420,12 @@
     return coarse && portrait;
   }
   function updateTouchMode() {
+    setZoomLock(fsActive());
     var on = fsActive() && isTouchPortrait();
     el.screenFrame.classList.toggle('touch-mode', on);
     if (!on) {
       hideNumpad();
+      hideExitPrompt();
       releaseStick();
       emu.joy[touch.player].fire = 0;
     }
@@ -406,13 +436,31 @@
   window.addEventListener('resize', updateTouchMode);
   window.addEventListener('orientationchange', updateTouchMode);
 
-  // --- 8-way draggable joystick ---
+  // --- 8-way draggable joystick, snapped to 9 discrete positions (8
+  // directions + centre) since the console joystick is digital, not analog ---
   var stickPointer = null;
+  var lastStickDir = '';
+  function knobUnitVector(j) {
+    var ux = (j.right ? 1 : 0) - (j.left ? 1 : 0);
+    var uy = (j.down ? 1 : 0) - (j.up ? 1 : 0);
+    var len = Math.sqrt(ux * ux + uy * uy);
+    return len ? { x: ux / len, y: uy / len } : { x: 0, y: 0 };
+  }
+  function snapKnob(j) {
+    var r = touchStick.clientWidth / 2;
+    var v = knobUnitVector(j);
+    touchKnob.style.transform = 'translate(' + (v.x * r * 0.7) + 'px,' + (v.y * r * 0.7) + 'px)';
+    var dir = (j.up ? 'u' : '') + (j.down ? 'd' : '') + (j.left ? 'l' : '') + (j.right ? 'r' : '');
+    if (dir !== lastStickDir) {
+      if (dir) hapticTap(10); // pulse only when engaging a (new) direction, not on release
+      lastStickDir = dir;
+    }
+  }
   function releaseStick() {
     stickPointer = null;
-    touchKnob.style.transform = '';
     var j = emu.joy[touch.player];
     j.up = j.down = j.left = j.right = 0;
+    snapKnob(j);
   }
   function applyStick(dx, dy) {
     var j = emu.joy[touch.player];
@@ -420,20 +468,19 @@
     var dist = Math.sqrt(dx * dx + dy * dy);
     var r = touchStick.clientWidth / 2;
     var dead = Math.max(12, r * 0.25);
-    // clamp knob to the base circle
-    var k = dist > r * 0.7 ? (r * 0.7) / dist : 1;
-    touchKnob.style.transform = 'translate(' + (dx * k) + 'px,' + (dy * k) + 'px)';
-    if (dist < dead) return;
-    // 8 sectors of 45°, diagonals set two directions
-    var a = Math.atan2(dy, dx) * 180 / Math.PI; // -180..180, 0 = right
-    if (a > -112.5 && a < -67.5) { j.up = 1; }
-    else if (a >= -67.5 && a <= -22.5) { j.up = 1; j.right = 1; }
-    else if (a > -22.5 && a < 22.5) { j.right = 1; }
-    else if (a >= 22.5 && a <= 67.5) { j.down = 1; j.right = 1; }
-    else if (a > 67.5 && a < 112.5) { j.down = 1; }
-    else if (a >= 112.5 && a <= 157.5) { j.down = 1; j.left = 1; }
-    else if (a > 157.5 || a < -157.5) { j.left = 1; }
-    else { j.up = 1; j.left = 1; }
+    if (dist >= dead) {
+      // 8 sectors of 45°, diagonals set two directions
+      var a = Math.atan2(dy, dx) * 180 / Math.PI; // -180..180, 0 = right
+      if (a > -112.5 && a < -67.5) { j.up = 1; }
+      else if (a >= -67.5 && a <= -22.5) { j.up = 1; j.right = 1; }
+      else if (a > -22.5 && a < 22.5) { j.right = 1; }
+      else if (a >= 22.5 && a <= 67.5) { j.down = 1; j.right = 1; }
+      else if (a > 67.5 && a < 112.5) { j.down = 1; }
+      else if (a >= 112.5 && a <= 157.5) { j.down = 1; j.left = 1; }
+      else if (a > 157.5 || a < -157.5) { j.left = 1; }
+      else { j.up = 1; j.left = 1; }
+    }
+    snapKnob(j);
   }
   touchStick.addEventListener('pointerdown', function (e) {
     e.preventDefault();
@@ -461,22 +508,52 @@
   touchFire.addEventListener('pointerdown', function (e) {
     e.preventDefault();
     emu.joy[touch.player].fire = 1;
+    hapticTap(15);
     if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
   });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
     touchFire.addEventListener(ev, function (e) { e.preventDefault(); emu.joy[touch.player].fire = 0; });
   });
 
-  // --- swap button: drive the other console joystick ---
+  // --- swap button: tap swaps which console joystick the touch controls
+  // drive; holding it instead offers to exit fullscreen (so it can't be
+  // triggered by accident mid-game) ---
   function setTouchPlayer(p) {
     var j = emu.joy[touch.player];
     j.up = j.down = j.left = j.right = j.fire = 0;
     touch.player = p;
     touchPlayerNo.textContent = String(p + 1);
   }
+  function showExitPrompt() {
+    touchExitPrompt.classList.add('show');
+    armExitPromptIdle();
+  }
+  function hideExitPrompt() {
+    touchExitPrompt.classList.remove('show');
+    if (exitPromptIdle) { clearTimeout(exitPromptIdle); exitPromptIdle = null; }
+  }
+  var exitPromptIdle = null;
+  function armExitPromptIdle() {
+    if (exitPromptIdle) clearTimeout(exitPromptIdle);
+    exitPromptIdle = setTimeout(hideExitPrompt, 4000);
+  }
+  var swapPressTimer = null, swapHeld = false;
   touchSwap.addEventListener('pointerdown', function (e) {
     e.preventDefault();
-    setTouchPlayer(touch.player === 0 ? 1 : 0);
+    swapHeld = false;
+    swapPressTimer = setTimeout(function () { swapHeld = true; showExitPrompt(); }, 600);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
+    touchSwap.addEventListener(ev, function (e) {
+      e.preventDefault();
+      if (swapPressTimer) { clearTimeout(swapPressTimer); swapPressTimer = null; }
+      if (!swapHeld) setTouchPlayer(touch.player === 0 ? 1 : 0);
+    });
+  });
+  touchExitBtn.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    hideExitPrompt();
+    toggleFullscreen();
   });
 
   // --- long-press on the screen: temporary number pad ---
@@ -495,6 +572,7 @@
   }
   canvas.addEventListener('pointerdown', function (e) {
     if (!el.screenFrame.classList.contains('touch-mode')) return;
+    e.preventDefault();
     pressStart = { x: e.clientX, y: e.clientY };
     pressTimer = setTimeout(function () { pressTimer = null; showNumpad(); }, 450);
   });
@@ -514,12 +592,15 @@
       e.preventDefault();
       if (btn.dataset.close) { hideNumpad(); return; }
       emu.keys[btn.dataset.code] = true;
-      armNumpadIdle();
+      hapticTap(10);
     });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
       btn.addEventListener(ev, function (e) {
         e.preventDefault();
-        if (btn.dataset.code) emu.keys[btn.dataset.code] = false;
+        if (btn.dataset.code) {
+          emu.keys[btn.dataset.code] = false;
+          hideNumpad(); // a number was chosen - dismiss right away
+        }
       });
     });
   });

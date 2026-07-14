@@ -61,9 +61,15 @@ appear: the screen is pinned to the top, a draggable **8-way joystick** sits und
 right thumb, a **FIRE** button under the left thumb (top-aligned with the stick), and a
 **⇄ P1/P2** button in the bottom-left corner switches which console joystick you
 control. **Press and hold the screen** to bring up a temporary number pad — e.g. for
-the BIOS "SELECT GAME" prompt. On iPhone (where the browser lacks a fullscreen API for
-page elements) a built-in fullscreen fallback is used automatically, so single-player
-games are playable on iOS Safari.
+the BIOS "SELECT GAME" prompt — it closes the instant you tap a digit. **Press and
+hold ⇄** to get an "Exit Fullscreen" option instead of swapping, so it can't be
+triggered by accident mid-game. The on-screen joystick snaps between its 8 discrete
+positions rather than sliding smoothly, matching the console's digital (not analog)
+stick, and gives a light haptic tap together with the FIRE button on devices that
+support the Vibration API. On iPhone (where the browser lacks a fullscreen API for
+page elements) a built-in fullscreen fallback is used automatically — including a lock
+against accidental pinch/double-tap zoom while it's active — so single-player games
+are playable on iOS Safari.
 
 Open **⚙ Settings** to turn sound on/off and adjust the volume, and to configure the
 two joysticks. Each joystick is shown as a **D-pad-shaped diagram**; use **Configure
