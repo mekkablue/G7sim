@@ -5,7 +5,21 @@ and **Videopac**. It emulates the console's Intel **8048** microcontroller and I
 **8244/8245** Video Display Controller entirely in JavaScript, so real cartridge dumps
 run in any modern browser with no plugins, no build step, and no server.
 
-Just open `index.html`.
+Just open `index.html`. There's no build step — it's plain HTML/CSS/JS, so it also
+runs unmodified from GitHub Pages (see below) or any static file host.
+
+## Running it live (GitHub Pages)
+
+Opening `index.html` from the repo's file view on github.com only shows its source —
+GitHub never executes HTML/JS there. To actually run the app, serve it with
+**GitHub Pages** (Settings → Pages → Source: *Deploy from a branch* → branch `main`,
+folder `/ (root)` → Save). This repo is already set up for it: a `.nojekyll` file
+skips unnecessary Jekyll processing, and every path in `index.html` is relative, so it
+works whether Pages serves it at the domain root or under a project subpath (e.g.
+`https://<user>.github.io/G7sim/`). It also needs no server-side code — Pages' HTTPS
+is exactly what the `rom/rom.bin`/`rom.zip`/`games.zip` auto-load and the in-browser
+ZIP inflate rely on. First load takes a minute or two after enabling Pages, and again
+after each push while it redeploys.
 
 ## Loading ROMs (drag & drop)
 
