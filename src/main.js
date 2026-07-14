@@ -540,21 +540,39 @@
 
   // Try to fetch a bundled default file placed next to index.html (rom/…).
   // fetch() doesn't work from file:// origins, so only attempt over http(s).
+  // Resolves to a Uint8Array on success, or null (with a console note) otherwise.
   function fetchDefault(path) {
     if (location.protocol === 'file:') return Promise.resolve(null);
-    return fetch(path).then(function (r) {
-      if (!r || !r.ok) return null;
+    var url;
+    try { url = new URL(path, location.href).href; } catch (e) { url = path; }
+    return fetch(url, { cache: 'no-cache' }).then(function (r) {
+      if (!r || !r.ok) {
+        console.info('[G7sim] ' + path + ' not auto-loaded (HTTP ' + (r ? r.status : '?') + ' at ' + url + ')');
+        return null;
+      }
       return r.arrayBuffer().then(function (ab) { return new Uint8Array(ab); });
-    }).catch(function () { return null; });
+    }).catch(function (e) {
+      console.info('[G7sim] ' + path + ' not auto-loaded (' + (e && e.message ? e.message : e) + ')');
+      return null;
+    });
   }
 
   // BIOS: persisted copy wins; otherwise fall back to rom/rom.bin if present.
+  // A console BIOS is 1 KB; accept a larger dump too (only the first 1 KB is used),
+  // so a slightly padded file or a multi-region dump still works on any server.
   window.G7Store.get('bios').then(function (buf) {
     if (buf) { try { loadBiosBytes(new Uint8Array(buf), false); } catch (e) {} return; }
     fetchDefault('rom/rom.bin').then(function (bytes) {
-      if (bytes && bytes.length === 1024) {
-        try { loadBiosBytes(bytes, false); } catch (e) {}
+      if (!bytes) return;
+      if (bytes.length < 1024) {
+        console.warn('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; a console BIOS must be at least 1 KB — ignoring.');
+        setStatus('Found rom/rom.bin, but it is only ' + bytes.length + ' bytes (a BIOS must be 1 KB). Check the file.');
+        return;
       }
+      if (bytes.length !== 1024) {
+        console.info('[G7sim] rom/rom.bin is ' + bytes.length + ' bytes; using the first 1 KB as the BIOS.');
+      }
+      try { loadBiosBytes(bytes, false); } catch (e) { console.warn('[G7sim] failed to load rom/rom.bin: ' + e); }
     });
   });
 
