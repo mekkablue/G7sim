@@ -312,28 +312,15 @@
     emu.keys = {};
   });
 
-  // on-screen controls (D-pad, fire, keypad)
-  function bindHold(id, onDown, onUp) {
-    var node = document.getElementById(id);
-    if (!node) return;
-    var press = function (e) { e.preventDefault(); onDown(); if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume(); };
-    var release = function (e) { e.preventDefault(); onUp(); };
-    node.addEventListener('pointerdown', press);
-    node.addEventListener('pointerup', release);
-    node.addEventListener('pointerleave', release);
-    node.addEventListener('pointercancel', release);
-  }
-  ['up', 'down', 'left', 'right', 'fire'].forEach(function (dir) {
-    bindHold('pad-' + dir,
-      function () { emu.joy[0][dir] = 1; },
-      function () { emu.joy[0][dir] = 0; });
-  });
-  document.querySelectorAll('#keypad button[data-code]').forEach(function (btn) {
-    var code = btn.dataset.code;
-    bindHold(btn.id || (btn.id = 'kp_' + code),
-      function () { emu.keys[code] = true; },
-      function () { emu.keys[code] = false; });
-  });
+  // ---------- help modal ----------
+  var helpPanel = document.getElementById('helpPanel');
+  function openHelp() { helpPanel.classList.add('show'); }
+  function closeHelp() { helpPanel.classList.remove('show'); }
+  document.getElementById('helpBtn').addEventListener('click', openHelp);
+  document.getElementById('helpLink').addEventListener('click', openHelp);
+  document.getElementById('helpClose').addEventListener('click', closeHelp);
+  helpPanel.addEventListener('click', function (e) { if (e.target === helpPanel) closeHelp(); });
+  window.addEventListener('keydown', function (e) { if (e.code === 'Escape') closeHelp(); });
 
   // ---------- buttons ----------
   el.reset.addEventListener('click', function () {

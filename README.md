@@ -37,7 +37,8 @@ http(s); on `file://` use drag & drop.)
 | Joystick P2 | Numpad `8` `4` `6` `2` · fire = Numpad `0` |
 | Keyboard | Letter/number keys map to the Videopac membrane keyboard; `Enter`, `Backspace` = DEL |
 
-On-screen D-pad, fire button and numeric keypad are provided for touch devices.
+Click **❓ Help** at any time for a quick reference on installing ROMs, opening games,
+the controls, and the shortcuts.
 
 Open **⚙ Settings** to turn sound on/off and adjust the volume, and to configure the
 two joysticks. Each joystick is shown as a **D-pad-shaped diagram**; use **Configure
