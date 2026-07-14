@@ -18,6 +18,19 @@
     <section class="console">
       <div class="screen-frame">
         <canvas id="screen" width="320" height="240"></canvas>
+        <div id="touchUI">
+          <button id="touchFire" aria-label="Fire">FIRE</button>
+          <div id="touchStick" aria-label="Joystick">
+            <div id="touchKnob"></div>
+          </div>
+          <button id="touchSwap" aria-label="Swap joysticks">⇄ P<span id="touchPlayerNo">1</span></button>
+        </div>
+        <div id="touchNumpad" class="touch-numpad">
+          <button data-code="Digit1">1</button><button data-code="Digit2">2</button><button data-code="Digit3">3</button>
+          <button data-code="Digit4">4</button><button data-code="Digit5">5</button><button data-code="Digit6">6</button>
+          <button data-code="Digit7">7</button><button data-code="Digit8">8</button><button data-code="Digit9">9</button>
+          <button data-code="Enter">⏎</button><button data-code="Digit0">0</button><button class="np-close" data-close="1">✕</button>
+        </div>
       </div>
 
       <div class="toolbar">
@@ -95,6 +108,15 @@
         <tr><td><kbd>Alt</kbd>+<kbd>0</kbd></td><td>Fullscreen</td></tr>
         <tr><td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd></td><td>Flip joysticks</td></tr>
       </table>
+    </section>
+
+    <section class="settings-group">
+      <h3>Playing on a phone</h3>
+      <p class="hint">In fullscreen on a touch device in portrait, the screen moves to the top and touch
+      controls appear: a draggable 8-way <b>joystick</b> for the right thumb, a <b>FIRE</b> button for
+      the left thumb, and a <b>⇄ P1/P2</b> button (bottom-left) that switches which console joystick
+      you control. <b>Press and hold the screen</b> for a temporary number pad (e.g. to pick a game at
+      the SELECT GAME prompt).</p>
     </section>
   </div>
 </div>
