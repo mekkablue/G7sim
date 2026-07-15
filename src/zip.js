@@ -9,6 +9,20 @@
   function u16(d, o) { return d[o] | (d[o + 1] << 8); }
   function u32(d, o) { return (d[o] | (d[o + 1] << 8) | (d[o + 2] << 16) | (d[o + 3] << 24)) >>> 0; }
 
+  // Entry names are near-universally UTF-8 in modern zip tools (macOS Archive
+  // Utility, 7-Zip, Info-ZIP), whether or not they set the legacy "language
+  // encoding" flag bit. Decoding as UTF-8 leaves plain ASCII names unaffected
+  // and fixes accented characters that a byte-for-byte Latin-1 read mangles
+  // (e.g. "Schützenfest" turning into "SchÃ¼tzenfest").
+  var utf8Decoder = (typeof TextDecoder !== 'undefined') ? new TextDecoder('utf-8') : null;
+  function decodeName(data, offset, len) {
+    var bytes = data.subarray(offset, offset + len);
+    if (utf8Decoder) return utf8Decoder.decode(bytes);
+    var s = '';
+    for (var c = 0; c < len; c++) s += String.fromCharCode(bytes[c]);
+    return s;
+  }
+
   // Returns { entries: [{name, method, compSize, size, offset}], data }
   function parseZip(data) {
     // locate End Of Central Directory (scan backwards for signature 0x06054b50)
@@ -31,8 +45,7 @@
       var extraLen = u16(data, p + 30);
       var commentLen = u16(data, p + 32);
       var localOffset = u32(data, p + 42);
-      var name = '';
-      for (var c = 0; c < nameLen; c++) name += String.fromCharCode(data[p + 46 + c]);
+      var name = decodeName(data, p + 46, nameLen);
       p += 46 + nameLen + extraLen + commentLen;
       if (name.charAt(name.length - 1) === '/') continue; // directory
       entries.push({ name: name, method: method, compSize: compSize, size: size, offset: localOffset });
