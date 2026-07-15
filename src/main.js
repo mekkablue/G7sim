@@ -323,11 +323,12 @@
   window.addEventListener('keydown', function (e) { if (e.code === 'Escape') closeHelp(); });
 
   // ---------- buttons ----------
-  el.reset.addEventListener('click', function () {
+  function doReset() {
     if (!emu.app.cartLoaded) return;
     emu.reset(); running = true; el.pause.textContent = 'Pause';
     setStatus('Reset: ' + currentGame);
-  });
+  }
+  el.reset.addEventListener('click', doReset);
   function togglePause() {
     if (!ready) return;
     running = !running;
@@ -410,8 +411,10 @@
   var touchSwap = document.getElementById('touchSwap');
   var touchPlayerNo = document.getElementById('touchPlayerNo');
   var touchNumpad = document.getElementById('touchNumpad');
-  var touchExitPrompt = document.getElementById('touchExitPrompt');
-  var touchExitBtn = document.getElementById('touchExitBtn');
+  var touchHoldMenu = document.getElementById('touchHoldMenu');
+  var touchMenuReset = document.getElementById('touchMenuReset');
+  var touchMenuSound = document.getElementById('touchMenuSound');
+  var touchMenuExit = document.getElementById('touchMenuExit');
 
   function isTouchPortrait() {
     if (touch.forced !== null) return touch.forced;
@@ -425,7 +428,7 @@
     el.screenFrame.classList.toggle('touch-mode', on);
     if (!on) {
       hideNumpad();
-      hideExitPrompt();
+      hideHoldMenu();
       releaseStick();
       emu.joy[touch.player].fire = 0;
     }
@@ -516,32 +519,36 @@
   });
 
   // --- swap button: tap swaps which console joystick the touch controls
-  // drive; holding it instead offers to exit fullscreen (so it can't be
-  // triggered by accident mid-game) ---
+  // drive; holding it instead pops up a small menu (Reset / Sound / Exit
+  // Fullscreen) so none of those can be triggered by an accidental tap ---
   function setTouchPlayer(p) {
     var j = emu.joy[touch.player];
     j.up = j.down = j.left = j.right = j.fire = 0;
     touch.player = p;
     touchPlayerNo.textContent = String(p + 1);
   }
-  function showExitPrompt() {
-    touchExitPrompt.classList.add('show');
-    armExitPromptIdle();
+  function updateTouchMenuLabels() {
+    touchMenuSound.textContent = settings.soundEnabled ? '🔈 Sound on' : '🔇 Sound off';
   }
-  function hideExitPrompt() {
-    touchExitPrompt.classList.remove('show');
-    if (exitPromptIdle) { clearTimeout(exitPromptIdle); exitPromptIdle = null; }
+  function showHoldMenu() {
+    updateTouchMenuLabels();
+    touchHoldMenu.classList.add('show');
+    armHoldMenuIdle();
   }
-  var exitPromptIdle = null;
-  function armExitPromptIdle() {
-    if (exitPromptIdle) clearTimeout(exitPromptIdle);
-    exitPromptIdle = setTimeout(hideExitPrompt, 4000);
+  function hideHoldMenu() {
+    touchHoldMenu.classList.remove('show');
+    if (holdMenuIdle) { clearTimeout(holdMenuIdle); holdMenuIdle = null; }
+  }
+  var holdMenuIdle = null;
+  function armHoldMenuIdle() {
+    if (holdMenuIdle) clearTimeout(holdMenuIdle);
+    holdMenuIdle = setTimeout(hideHoldMenu, 5000);
   }
   var swapPressTimer = null, swapHeld = false;
   touchSwap.addEventListener('pointerdown', function (e) {
     e.preventDefault();
     swapHeld = false;
-    swapPressTimer = setTimeout(function () { swapHeld = true; showExitPrompt(); }, 600);
+    swapPressTimer = setTimeout(function () { swapHeld = true; showHoldMenu(); }, 600);
   });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) {
     touchSwap.addEventListener(ev, function (e) {
@@ -550,9 +557,19 @@
       if (!swapHeld) setTouchPlayer(touch.player === 0 ? 1 : 0);
     });
   });
-  touchExitBtn.addEventListener('pointerdown', function (e) {
+  touchMenuReset.addEventListener('pointerdown', function (e) {
     e.preventDefault();
-    hideExitPrompt();
+    hideHoldMenu();
+    doReset();
+  });
+  touchMenuSound.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    toggleSound();
+    hideHoldMenu();
+  });
+  touchMenuExit.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    hideHoldMenu();
     toggleFullscreen();
   });
 

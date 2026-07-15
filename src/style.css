@@ -151,18 +151,23 @@ html.g7-lock-zoom, html.g7-lock-zoom body {
   border-radius: 20px; font-size: 13px; touch-action: none;
 }
 
-/* holding the swap button pops this up instead of swapping */
-.touch-exit-prompt { display: none; }
-.touch-exit-prompt.show { display: block; }
-.touch-exit-prompt {
-  position: absolute; left: 16px; bottom: 54px; z-index: 6;
+/* holding the swap button pops this menu up instead of swapping */
+.touch-hold-menu { display: none; }
+.touch-hold-menu.show { display: flex; }
+.touch-hold-menu {
+  /* anchored clear above the fire button's top edge (bottom:124px + 90px
+     tall = 214px) with a safety margin, so the menu can never overlap it -
+     the fire button stays live and tappable the whole time the menu shows */
+  position: absolute; left: 16px; bottom: 224px; z-index: 6;
+  flex-direction: column; gap: 8px; align-items: flex-start;
 }
-.touch-exit-prompt button {
+.touch-hold-menu button {
   padding: 10px 16px; border-radius: 10px; font-size: 13px;
-  background: var(--panel2); border: 1px solid var(--accent); color: var(--accent);
+  background: var(--panel2); border: 1px solid var(--edge); color: var(--text);
   touch-action: none; white-space: nowrap;
   box-shadow: 0 4px 14px rgba(0,0,0,.5);
 }
+.touch-hold-menu #touchMenuExit { border-color: var(--accent); color: var(--accent); }
 
 /* long-press number pad overlay */
 .touch-numpad.show { display: grid; }
