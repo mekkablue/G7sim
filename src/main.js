@@ -290,6 +290,7 @@
         case 'Digit0': e.preventDefault(); toggleFullscreen(); return;
         case 'KeyP': e.preventDefault(); togglePause(); return;
         case 'KeyS': e.preventDefault(); toggleSound(); return;
+        case 'KeyR': e.preventDefault(); doReset(); return;
         case 'KeyJ': if (e.shiftKey) { e.preventDefault(); flipJoysticks(); return; } break;
       }
     }

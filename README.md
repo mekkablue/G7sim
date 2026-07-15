@@ -87,6 +87,7 @@ The modifier is <kbd>Option</kbd> on macOS and <kbd>AltGr</kbd> on Windows:
 |----------|--------|
 | <kbd>Alt</kbd>+<kbd>P</kbd> | Pause / resume |
 | <kbd>Alt</kbd>+<kbd>S</kbd> | Sound on / off |
+| <kbd>Alt</kbd>+<kbd>R</kbd> | Reset |
 | <kbd>Alt</kbd>+<kbd>0</kbd> | Fullscreen |
 | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> | Flip joysticks (harder combo, to avoid accidents) |
 
