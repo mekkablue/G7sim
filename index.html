@@ -28,8 +28,12 @@
           <div id="touchStick" aria-label="Joystick">
             <div id="touchKnob"></div>
           </div>
-          <button id="touchSwap" aria-label="Swap joysticks">⇄ P<span id="touchPlayerNo">1</span></button>
+          <button id="touchSwap" class="p1" aria-label="Swap joysticks (hold for menu)">
+            <span class="ts-hamburger" aria-hidden="true">☰</span>
+            <span class="ts-label">JOY <span id="touchPlayerNo">1</span></span>
+          </button>
           <div id="touchHoldMenu" class="touch-hold-menu">
+            <button id="touchMenuPause">⏸ Pause</button>
             <button id="touchMenuReset">⟲ Reset</button>
             <button id="touchMenuSound">🔈 Sound on</button>
             <button id="touchMenuExit">⤢ Exit Fullscreen</button>
@@ -40,7 +44,10 @@
           <button data-code="Digit4">4</button><button data-code="Digit5">5</button><button data-code="Digit6">6</button>
           <button data-code="Digit7">7</button><button data-code="Digit8">8</button><button data-code="Digit9">9</button>
           <button data-code="Enter">⏎</button><button data-code="Digit0">0</button><button class="np-close" data-close="1">✕</button>
+          <button id="touchKeyboardBtn" class="np-keyboard">⌨ KEYBOARD</button>
         </div>
+        <input id="touchKeyboardInput" class="visually-hidden-input" type="text" autocapitalize="characters"
+          autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text" aria-hidden="true" tabindex="-1">
       </div>
 
       <div class="toolbar">
@@ -123,15 +130,18 @@
 
     <section class="settings-group">
       <h3>Playing on a phone</h3>
-      <p class="hint">In fullscreen on a touch device in portrait, the screen moves to the top and touch
-      controls appear: a draggable 8-way <b>joystick</b> for the right thumb (it snaps between 8
-      directions, like the real digital stick), a <b>FIRE</b> button for the left thumb, and a
-      <b>⇄ P1/P2</b> button (bottom-left) that switches which console joystick you control.
-      <b>Press and hold the screen</b> for a temporary number pad (e.g. to pick a game at the SELECT
-      GAME prompt) — it closes as soon as you pick a digit. <b>Press and hold ⇄</b> for a menu with
-      <b>Reset</b> (most games return you to the SELECT GAME screen), <b>Sound on/off</b>, and
-      <b>Exit Fullscreen</b> — a quick tap still just swaps. On devices that support it, the joystick
-      and fire button give a light tactile tap.</p>
+      <p class="hint">On a touch device, <b>tap the screen</b> to enter fullscreen. In fullscreen and
+      portrait, the screen moves to the top and touch controls appear: a draggable 8-way <b>joystick</b>
+      for the right thumb (it snaps between 8 directions, like the real digital stick), a <b>FIRE</b>
+      button for the left thumb, and the <b>☰ JOY 1/2</b> button (bottom-left, coloured to match the
+      active joystick) that switches which one you control.</p>
+      <p class="hint"><b>Tap the screen</b> to pause (tap again on the dimmed screen to resume);
+      <b>press and hold the screen</b> instead for a temporary number pad (e.g. to pick a game at the
+      SELECT GAME prompt) — it closes as soon as you pick a digit, and its <b>⌨ KEYBOARD</b> button
+      opens your device's own keyboard for typing full hi-score names. <b>Press and hold ☰</b> for a
+      menu with <b>Pause</b>, <b>Reset</b> (most games return you to the SELECT GAME screen),
+      <b>Sound on/off</b>, and <b>Exit Fullscreen</b> — a quick tap still just swaps joysticks. On
+      devices that support it, the joystick and fire button give a light tactile tap.</p>
     </section>
   </div>
 </div>

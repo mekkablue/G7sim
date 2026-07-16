@@ -451,9 +451,12 @@
   var touchPlayerNo = document.getElementById('touchPlayerNo');
   var touchNumpad = document.getElementById('touchNumpad');
   var touchHoldMenu = document.getElementById('touchHoldMenu');
+  var touchMenuPause = document.getElementById('touchMenuPause');
   var touchMenuReset = document.getElementById('touchMenuReset');
   var touchMenuSound = document.getElementById('touchMenuSound');
   var touchMenuExit = document.getElementById('touchMenuExit');
+  var touchKeyboardBtn = document.getElementById('touchKeyboardBtn');
+  var touchKeyboardInput = document.getElementById('touchKeyboardInput');
 
   function isTouchPortrait() {
     if (touch.forced !== null) return touch.forced;
@@ -471,6 +474,7 @@
       hideHoldMenu();
       releaseStick();
       emu.joy[touch.player].fire = 0;
+      touchKeyboardInput.blur();
     }
   }
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
@@ -559,15 +563,23 @@
   });
 
   // --- swap button: tap swaps which console joystick the touch controls
-  // drive; holding it instead pops up a small menu (Reset / Sound / Exit
-  // Fullscreen) so none of those can be triggered by an accidental tap ---
+  // drive; holding it instead pops up a small menu (Pause / Reset / Sound /
+  // Exit Fullscreen) so none of those can be triggered by an accidental tap.
+  // The button's label and colour always show which joystick is active. ---
+  function updateTouchSwapVisual() {
+    touchPlayerNo.textContent = String(touch.player + 1);
+    touchSwap.classList.toggle('p1', touch.player === 0);
+    touchSwap.classList.toggle('p2', touch.player === 1);
+  }
   function setTouchPlayer(p) {
     var j = emu.joy[touch.player];
     j.up = j.down = j.left = j.right = j.fire = 0;
     touch.player = p;
-    touchPlayerNo.textContent = String(p + 1);
+    updateTouchSwapVisual();
   }
+  updateTouchSwapVisual();
   function updateTouchMenuLabels() {
+    touchMenuPause.textContent = running ? '⏸ Pause' : '▶ Resume';
     touchMenuSound.textContent = settings.soundEnabled ? '🔈 Sound on' : '🔇 Sound off';
   }
   function showHoldMenu() {
@@ -597,6 +609,11 @@
       if (!swapHeld) setTouchPlayer(touch.player === 0 ? 1 : 0);
     });
   });
+  touchMenuPause.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    hideHoldMenu();
+    togglePause();
+  });
   touchMenuReset.addEventListener('pointerdown', function (e) {
     e.preventDefault();
     hideHoldMenu();
@@ -613,8 +630,14 @@
     toggleFullscreen();
   });
 
-  // --- long-press on the screen: temporary number pad ---
-  var pressTimer = null, pressStart = null, numpadIdle = null;
+  // --- tapping / long-pressing the screen ---
+  // Tap-to-pause and tap-to-fullscreen only apply on touch devices, so mouse
+  // users clicking the canvas on desktop see no surprise behaviour change.
+  function isCoarsePointer() {
+    if (touch.forced !== null) return touch.forced;
+    return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  }
+  var pressTimer = null, pressStart = null, pressConsumed = false, numpadIdle = null;
   function showNumpad() {
     touchNumpad.classList.add('show');
     armNumpadIdle();
@@ -628,23 +651,41 @@
     numpadIdle = setTimeout(hideNumpad, 5000);
   }
   canvas.addEventListener('pointerdown', function (e) {
-    if (!el.screenFrame.classList.contains('touch-mode')) return;
+    var inTouchMode = el.screenFrame.classList.contains('touch-mode');
+    var tapEntersFullscreen = !fsActive() && isCoarsePointer();
+    if (!inTouchMode && !tapEntersFullscreen) return;
     e.preventDefault();
     pressStart = { x: e.clientX, y: e.clientY };
-    pressTimer = setTimeout(function () { pressTimer = null; showNumpad(); }, 450);
+    pressConsumed = false;
+    // Long-press for the number pad only makes sense once the touch
+    // controls are actually showing (fullscreen + portrait).
+    if (inTouchMode) {
+      pressTimer = setTimeout(function () { pressTimer = null; pressConsumed = true; showNumpad(); }, 450);
+    }
   });
   canvas.addEventListener('pointermove', function (e) {
-    if (!pressTimer || !pressStart) return;
+    if (!pressStart) return;
     if (Math.abs(e.clientX - pressStart.x) + Math.abs(e.clientY - pressStart.y) > 14) {
-      clearTimeout(pressTimer); pressTimer = null;
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      pressConsumed = true; // moved too far to count as a tap
     }
   });
   ['pointerup', 'pointercancel'].forEach(function (ev) {
     canvas.addEventListener(ev, function () {
       if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      var wasCleanTap = !!pressStart && !pressConsumed && ev === 'pointerup';
+      pressStart = null;
+      if (!wasCleanTap) return;
+      if (el.screenFrame.classList.contains('touch-mode')) {
+        // Pauses the live screen with a single tap; the pause overlay itself
+        // (which then covers the canvas) already handles tap-to-resume.
+        togglePause();
+      } else if (!fsActive() && isCoarsePointer()) {
+        toggleFullscreen();
+      }
     });
   });
-  touchNumpad.querySelectorAll('button').forEach(function (btn) {
+  touchNumpad.querySelectorAll('button:not(.np-keyboard)').forEach(function (btn) {
     btn.addEventListener('pointerdown', function (e) {
       e.preventDefault();
       if (btn.dataset.close) { hideNumpad(); return; }
@@ -660,6 +701,43 @@
         }
       });
     });
+  });
+
+  // --- KEYBOARD button: bridges the OS on-screen keyboard to the emulated
+  // membrane keyboard, for typing full hi-score names. A hidden text input
+  // is focused (summoning the native keyboard); each typed character is
+  // mapped to the matching physical key code and pulsed briefly, the same
+  // way the numpad buttons above already work. ---
+  function mapCharToTouchKeyCode(ch) {
+    if (/[a-zA-Z]/.test(ch)) return 'Key' + ch.toUpperCase();
+    if (/[0-9]/.test(ch)) return 'Digit' + ch;
+    if (ch === ' ') return 'Space';
+    if (ch === '.') return 'Period';
+    if (ch === '/') return 'Slash';
+    if (ch === '-') return 'Minus';
+    if (ch === '=') return 'Equal';
+    return null;
+  }
+  function pulseTouchKey(code) {
+    if (!code) return;
+    emu.keys[code] = true;
+    hapticTap(10);
+    setTimeout(function () { emu.keys[code] = false; }, 90);
+  }
+  touchKeyboardBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    hideNumpad();
+    touchKeyboardInput.value = '';
+    touchKeyboardInput.focus();
+  });
+  touchKeyboardInput.addEventListener('input', function () {
+    var v = touchKeyboardInput.value;
+    if (v.length > 0) pulseTouchKey(mapCharToTouchKeyCode(v.charAt(v.length - 1)));
+    touchKeyboardInput.value = ''; // reset so the next character starts clean
+  });
+  touchKeyboardInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); pulseTouchKey('Enter'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); pulseTouchKey('Backspace'); }
   });
 
   // ---------- settings panel ----------

@@ -56,21 +56,26 @@ the controls, and the shortcuts.
 
 ### Playing on a phone
 
-Enter **fullscreen** on a touch device in portrait orientation and touch controls
-appear: the screen is pinned to the top, a draggable **8-way joystick** sits under the
-right thumb, a **FIRE** button under the left thumb (top-aligned with the stick), and a
-**⇄ P1/P2** button in the bottom-left corner switches which console joystick you
-control. **Press and hold the screen** to bring up a temporary number pad — e.g. for
-the BIOS "SELECT GAME" prompt — it closes the instant you tap a digit. **Press and
-hold ⇄** for a menu with **Reset** (in most games, back to the SELECT GAME screen),
-**Sound on/off**, and **Exit Fullscreen** — a quick tap still just swaps, so none of
-those can be triggered by accident mid-game. The on-screen joystick snaps between its 8 discrete
-positions rather than sliding smoothly, matching the console's digital (not analog)
-stick, and gives a light haptic tap together with the FIRE button on devices that
-support the Vibration API. On iPhone (where the browser lacks a fullscreen API for
-page elements) a built-in fullscreen fallback is used automatically — including a lock
-against accidental pinch/double-tap zoom while it's active — so single-player games
-are playable on iOS Safari.
+On a touch device, **tap the screen** to enter fullscreen. In fullscreen and portrait
+orientation, touch controls appear: the screen is pinned to the top, a draggable
+**8-way joystick** sits under the right thumb, a **FIRE** button under the left thumb
+(top-aligned with the stick), and the **☰ JOY 1/2** button in the bottom-left corner —
+coloured to match whichever joystick is active — switches which one you control.
+
+**Tap the screen** to pause (tap again on the dimmed screen to resume). **Press and
+hold the screen** instead to bring up a temporary number pad — e.g. for the BIOS
+"SELECT GAME" prompt — it closes the instant you tap a digit; its **⌨ KEYBOARD** button
+opens your device's own keyboard so you can type a full hi-score name. **Press and hold
+☰** for a menu with **Pause**, **Reset** (in most games, back to the SELECT GAME
+screen), **Sound on/off**, and **Exit Fullscreen** — a quick tap still just swaps
+joysticks, so none of those can be triggered by accident mid-game.
+
+The on-screen joystick snaps between its 8 discrete positions rather than sliding
+smoothly, matching the console's digital (not analog) stick, and gives a light haptic
+tap together with the FIRE button on devices that support the Vibration API. On iPhone
+(where the browser lacks a fullscreen API for page elements) a built-in fullscreen
+fallback is used automatically — including a lock against accidental pinch/double-tap
+zoom while it's active — so single-player games are playable on iOS Safari.
 
 Open **⚙ Settings** to turn sound on/off and adjust the volume, and to configure the
 two joysticks. Each joystick is shown as a **D-pad-shaped diagram**; use **Configure
