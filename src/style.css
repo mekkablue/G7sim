@@ -30,7 +30,7 @@ header h1 span { color: var(--accent); }
 .bios-state.ok { color: var(--ok); border-color: #2c5; }
 
 main { display: grid; grid-template-columns: minmax(0,1fr) 260px; gap: 18px; align-items: start; }
-@media (max-width: 820px) { main { grid-template-columns: 1fr; } }
+@media (max-width: 820px) { main { grid-template-columns: minmax(0,1fr); } }
 
 .console { background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 16px; }
 .screen-frame {
@@ -58,7 +58,10 @@ button:disabled { opacity: .4; cursor: default; }
 
 .library { background: var(--panel); border: 1px solid var(--edge); border-radius: 14px; padding: 14px; min-height: 200px; }
 .library h2 { margin: 0 0 10px; font-size: 15px; color: var(--dim); font-weight: 600; }
-.library h2 .now { color: var(--accent); display: block; font-size: 13px; margin-top: 2px; word-break: break-word; }
+.library h2 .now {
+  color: var(--accent); display: block; font-size: 13px; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 #gameList { list-style: none; margin: 0; padding: 0; max-height: 460px; overflow-y: auto; }
 #gameList li {
   padding: 7px 10px; border-radius: 7px; cursor: pointer; font-size: 13.5px;
@@ -102,7 +105,7 @@ footer .fine { font-size: 12px; opacity: .75; }
    away afterwards. touch-action:none is the load-bearing rule; manipulation
    alone is not consistently honored by Safari for double-tap. */
 html.g7-lock-zoom, html.g7-lock-zoom body {
-  touch-action: none; overscroll-behavior: none;
+  touch-action: none; overscroll-behavior: none; overflow: hidden;
 }
 
 /* ---- mobile portrait touch mode (fullscreen + coarse pointer + portrait) ---- */

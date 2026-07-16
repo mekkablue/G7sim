@@ -100,6 +100,7 @@
     }
     currentGame = name;
     el.title.textContent = name;
+    el.title.title = name; // full name on hover/long-press since it's truncated with an ellipsis
     updateReady();
     if (!emu.app.biosLoaded) {
       setStatus('Loaded "' + name + '" - now drop the console BIOS (1 KB) to play.');
@@ -290,6 +291,7 @@
         case 'Digit0': e.preventDefault(); toggleFullscreen(); return;
         case 'KeyP': e.preventDefault(); togglePause(); return;
         case 'KeyS': e.preventDefault(); toggleSound(); return;
+        case 'KeyR': e.preventDefault(); doReset(); return;
         case 'KeyJ': if (e.shiftKey) { e.preventDefault(); flipJoysticks(); return; } break;
       }
     }
@@ -360,6 +362,25 @@
   function setZoomLock(on) {
     document.documentElement.classList.toggle('g7-lock-zoom', on);
   }
+  // iOS Safari's collapsible address/tab bar means 100vw/100vh on a
+  // position:fixed element doesn't reliably track the actually-visible area:
+  // the overlay can end up sized to a stale viewport, leaving a strip of the
+  // real page visible around it. Measuring window.visualViewport (which
+  // WebKit updates exactly when its chrome shows/hides) and applying it as
+  // explicit inline pixel dimensions sidesteps the viewport-unit bug
+  // entirely. Only applies to the fs-sim fallback - real :fullscreen is
+  // sized correctly by the browser itself.
+  function syncFsSimSize() {
+    var node = el.screenFrame;
+    if (!node.classList.contains('fs-sim')) {
+      node.style.width = '';
+      node.style.height = '';
+      return;
+    }
+    var vv = window.visualViewport;
+    node.style.width = (vv ? vv.width : window.innerWidth) + 'px';
+    node.style.height = (vv ? vv.height : window.innerHeight) + 'px';
+  }
   function toggleFullscreen() {
     var doc = document, node = el.screenFrame;
     if (doc.fullscreenElement || doc.webkitFullscreenElement) {
@@ -367,15 +388,20 @@
     } else if (node.classList.contains('fs-sim')) {
       node.classList.remove('fs-sim');
     } else if (node.requestFullscreen) {
-      node.requestFullscreen().catch(function () { node.classList.add('fs-sim'); });
+      node.requestFullscreen().catch(function () { node.classList.add('fs-sim'); window.scrollTo(0, 0); });
     } else if (node.webkitRequestFullscreen) {
       node.webkitRequestFullscreen();
     } else {
       node.classList.add('fs-sim');
+      window.scrollTo(0, 0); // normalize scroll before measuring the visual viewport
     }
     setTimeout(updateTouchMode, 50);
   }
   if (el.fullscreen) el.fullscreen.addEventListener('click', toggleFullscreen);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateTouchMode);
+    window.visualViewport.addEventListener('scroll', updateTouchMode);
+  }
 
   // Extra safety net: some iOS Safari versions still fire double-tap-zoom on
   // a fixed-position overlay despite touch-action:none. Suppress any second
@@ -423,6 +449,7 @@
     return coarse && portrait;
   }
   function updateTouchMode() {
+    syncFsSimSize();
     setZoomLock(fsActive());
     var on = fsActive() && isTouchPortrait();
     el.screenFrame.classList.toggle('touch-mode', on);
