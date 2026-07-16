@@ -17,7 +17,12 @@
   <main>
     <section class="console">
       <div class="screen-frame">
-        <canvas id="screen" width="320" height="240"></canvas>
+        <div class="canvas-wrap">
+          <canvas id="screen" width="320" height="240"></canvas>
+          <button id="pauseOverlay" class="pause-overlay" aria-label="Resume" hidden>
+            <span class="pause-play-icon">▶</span>
+          </button>
+        </div>
         <div id="touchUI">
           <button id="touchFire" aria-label="Fire">FIRE</button>
           <div id="touchStick" aria-label="Joystick">

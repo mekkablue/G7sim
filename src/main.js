@@ -40,7 +40,8 @@
     keyPrompt: document.getElementById('keyPrompt'),
     keysReset: document.getElementById('keysReset'),
     flipJoy: document.getElementById('flipJoy'),
-    screenFrame: document.querySelector('.screen-frame')
+    screenFrame: document.querySelector('.screen-frame'),
+    pauseOverlay: document.getElementById('pauseOverlay')
   };
 
   // ---------- rendering ----------
@@ -67,11 +68,17 @@
   }
   requestAnimationFrame(loop);
 
+  // Shows a dimmed screen with a resume button whenever a loaded game is
+  // explicitly paused (not before anything has loaded, and not while running).
+  function syncPauseOverlay() {
+    el.pauseOverlay.hidden = !(ready && !running);
+  }
   function updateReady() {
     ready = emu.app.biosLoaded && emu.app.cartLoaded;
     el.pause.disabled = !ready;
     el.reset.disabled = !ready;
     canvas.classList.toggle('on', ready);
+    syncPauseOverlay();
   }
 
   // ---------- loading ----------
@@ -111,6 +118,7 @@
       audio.ensure();
     }
     el.pause.textContent = 'Pause';
+    syncPauseOverlay();
     highlightSelected(name);
   }
 
@@ -138,7 +146,7 @@
     if (bytes.length === 1024) {
       loadBiosBytes(bytes, true);
       setStatus('BIOS installed.' + (emu.app.cartLoaded ? ' Press Start.' : ' Now drop a game or a games .zip.'));
-      if (emu.app.cartLoaded && emu.app.biosLoaded) { emu.reset(); running = true; audio.ensure(); }
+      if (emu.app.cartLoaded && emu.app.biosLoaded) { emu.reset(); running = true; audio.ensure(); syncPauseOverlay(); }
       return;
     }
     if ((bytes.length % 1024) === 0 && bytes.length >= 2048) {
@@ -328,6 +336,7 @@
   function doReset() {
     if (!emu.app.cartLoaded) return;
     emu.reset(); running = true; el.pause.textContent = 'Pause';
+    syncPauseOverlay();
     setStatus('Reset: ' + currentGame);
   }
   el.reset.addEventListener('click', doReset);
@@ -335,9 +344,13 @@
     if (!ready) return;
     running = !running;
     el.pause.textContent = running ? 'Pause' : 'Resume';
+    syncPauseOverlay();
     if (running) audio.ensure();
     setStatus((running ? 'Resumed' : 'Paused') + (currentGame ? ': ' + currentGame : ''));
   }
+  el.pauseOverlay.addEventListener('click', function () {
+    if (!running) togglePause(); // resume the paused game
+  });
   function toggleSound() {
     settings.soundEnabled = !settings.soundEnabled;
     applyAudioSettings();
