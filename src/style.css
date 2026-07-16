@@ -166,11 +166,19 @@ html.g7-lock-zoom, html.g7-lock-zoom body {
 }
 #touchFire:active { background: #a02a3a; }
 
-/* swap button, bottom-left corner */
+/* swap button, bottom-left corner. Colour + label always reflect the
+   currently active joystick; the hamburger glyph hints that holding it
+   opens a menu instead of swapping. */
 #touchSwap {
   position: absolute; left: 16px; bottom: 14px; padding: 8px 14px;
   border-radius: 20px; font-size: 13px; touch-action: none;
+  display: flex; align-items: center; gap: 7px;
+  transition: background-color .15s, border-color .15s, color .15s;
 }
+#touchSwap.p1 { background: var(--accent); border-color: var(--accent); color: #1a1a1a; }
+#touchSwap.p2 { background: var(--accent2); border-color: var(--accent2); color: #06222c; }
+.ts-hamburger { font-size: 15px; line-height: 1; }
+.ts-label { font-weight: 700; letter-spacing: .3px; }
 
 /* holding the swap button pops this menu up instead of swapping */
 .touch-hold-menu { display: none; }
@@ -200,6 +208,19 @@ html.g7-lock-zoom, html.g7-lock-zoom body {
 }
 .touch-numpad button { font-size: 20px; padding: 0; touch-action: none; }
 .touch-numpad .np-close { color: var(--accent); }
+.touch-numpad .np-keyboard {
+  grid-column: span 3; font-size: 13px; font-weight: 600; letter-spacing: .5px;
+  color: var(--accent2); border-color: var(--accent2);
+}
+
+/* Input used only to summon the OS on-screen keyboard for typing hi-score
+   names; kept technically visible/focusable (never display:none) since
+   iOS won't open the keyboard for a focus() on a display:none element.
+   font-size:16px stops iOS auto-zooming the page when it gains focus. */
+.visually-hidden-input {
+  position: fixed; left: 0; bottom: 0; width: 1px; height: 1px;
+  opacity: .01; border: none; padding: 0; margin: 0; font-size: 16px;
+}
 
 /* settings panel */
 .settings-overlay {
